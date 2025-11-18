@@ -1,0 +1,66 @@
+<%- include('../partials/head', { skipBaseCss: true, extraCss: "<link rel='stylesheet' href='/assets/css/auth-signup.css'>" }) %>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="animated-content">
+            <div class="fitness-icon"><i class="fas fa-dumbbell"></i></div>
+            <h1>Welcome to FitLife</h1>
+            <p>Transform your body, transform your life</p>
+            <div class="animated-elements">
+                <div class="pulse-circle circle-1"></div>
+                <div class="pulse-circle circle-2"></div>
+                <div class="pulse-circle circle-3"></div>
+            </div>
+            <div class="floating-icons">
+                <i class="fas fa-heart"></i>
+                <i class="fas fa-fire"></i>
+                <i class="fas fa-trophy"></i>
+                <i class="fas fa-running"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="form-container">
+            <div class="form-header">
+                <h2>Create Account</h2>
+                <p>Join thousands of fitness enthusiasts</p>
+            </div>
+            <form class="signup-form" id="signupForm" method="post" action="/signup">
+                <div class="form-group">
+                    <div class="input-container"><i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" placeholder="Username" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container"><i class="fas fa-envelope"></i>
+                        <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container"><i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Password" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container"><i class="fas fa-lock"></i>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required>
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <span class="checkmark"></span>
+                        I agree to the <a href="#" class="terms-link">Terms & Conditions</a>
+                    </label>
+                </div>
+                <button type="submit" class="signup-btn"><span>Sign Up</span><i class="fas fa-arrow-right"></i></button>
+                <div class="login-link"><p>Already have an account? <a href="/signin" class="login-text">Sign In</a></p></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/auth-signup.js"></script>
+</body>
+</html>
