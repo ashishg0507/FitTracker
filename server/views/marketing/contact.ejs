@@ -1,0 +1,123 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<main class="main-content">
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">Contact Us</h1>
+            <p class="page-subtitle">Get in touch with our fitness experts and start your transformation today</p>
+        </div>
+    </section>
+
+    <section class="contact-content">
+        <div class="container">
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h2 class="section-title">Get In Touch</h2>
+                    <p class="contact-description">Have questions about your fitness journey? Need personalized advice? Our team of certified fitness professionals is here to help you achieve your goals. Reach out to us through any of the channels below.</p>
+
+                    <div class="contact-methods">
+                        <div class="contact-method">
+                            <div class="contact-icon"><i class="fas fa-phone"></i></div>
+                            <div class="contact-details">
+                                <h4>Phone</h4>
+                                <p>+1 (555) 123-4567</p>
+                                <span>Mon-Fri 9AM-6PM EST</span>
+                            </div>
+                        </div>
+                        <div class="contact-method">
+                            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                            <div class="contact-details">
+                                <h4>Email</h4>
+                                <p>support@fittack.com</p>
+                                <span>We respond within 24 hours</span>
+                            </div>
+                        </div>
+                        <div class="contact-method">
+                            <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            <div class="contact-details">
+                                <h4>Address</h4>
+                                <p>123 Fitness Street<br>Health City, HC 12345</p>
+                                <span>Visit our fitness center</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="social-contact">
+                        <h4>Follow Us</h4>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-facebook"></i><span>Facebook</span></a>
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i><span>Instagram</span></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i><span>Twitter</span></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i><span>YouTube</span></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form-container">
+                    <form class="contact-form" id="contactForm">
+                        <h3>Send us a Message</h3>
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <select id="subject" name="subject" required>
+                                <option value="">Select a subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="fitness">Fitness Consultation</option>
+                                <option value="nutrition">Nutrition Advice</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="partnership">Partnership</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5" required placeholder="Tell us about your fitness goals and how we can help..."></textarea>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="newsletter" name="newsletter">
+                            <label for="newsletter">Subscribe to our fitness newsletter for tips and updates</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full"><i class="fas fa-paper-plane"></i> Send Message</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4>How do I get started with FitTack?</h4>
+                        <p>Simply sign up for a free account, complete your fitness assessment, and our AI will create a personalized workout plan just for you.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Do you offer personal training sessions?</h4>
+                        <p>Yes! We offer both in-person and virtual personal training sessions with certified fitness professionals.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What if I'm a complete beginner?</h4>
+                        <p>Perfect! Our platform is designed for all fitness levels. We provide beginner-friendly workouts with detailed instructions and modifications.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Can I track my nutrition as well?</h4>
+                        <p>Absolutely! Our comprehensive platform includes nutrition tracking, meal planning, and access to registered dietitians.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/assets/js/contact.js"></script>
+<%- include('../partials/footer') %>
