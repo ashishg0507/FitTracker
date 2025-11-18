@@ -543,3 +543,175 @@ app.get('/api/diet/current', requireAuth, async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Internal server error.' });
     }
 });
+
+// Swap dish in diet plan
+app.post('/api/diet/swap-dish', requireAuth, async (req, res) => {
+    try {
+        const { newDishId, oldDishId, mealType, dayIndex } = req.body;
+        
+        if (!newDishId || !oldDishId || !mealType || dayIndex === undefined) {
+            return res.status(400).json({ ok: false, message: 'Missing required fields' });
+        }
+        
+        // Get user's current diet plan
+        const user = await User.findById(req.user.id);
+        if (!user || !user.currentDietPlan) {
+            return res.status(400).json({ ok: false, message: 'No active diet plan found' });
+        }
+        
+        const dietPlan = await DietPlan.findById(user.currentDietPlan);
+        if (!dietPlan) {
+            return res.status(404).json({ ok: false, message: 'Diet plan not found' });
+        }
+        
+        // Get the new dish
+        const newDish = await Dish.findById(newDishId);
+        if (!newDish) {
+            return res.status(404).json({ ok: false, message: 'New dish not found' });
+        }
+        
+        // Update the specific day's dish
+        if (dayIndex < 0 || dayIndex >= dietPlan.dailyPlans.length) {
+            return res.status(400).json({ ok: false, message: 'Invalid day index' });
+        }
+        
+        const dailyPlan = dietPlan.dailyPlans[dayIndex];
+        
+        // Update the specific meal
+        if (mealType === 'breakfast') {
+            dailyPlan.breakfast = newDishId;
+        } else if (mealType === 'lunch') {
+            dailyPlan.lunch = newDishId;
+        } else if (mealType === 'dinner') {
+            dailyPlan.dinner = newDishId;
+        } else if (mealType === 'snack') {
+            // For snacks, we need to find which snack to replace
+            if (Array.isArray(dailyPlan.snacks)) {
+                const index = dailyPlan.snacks.findIndex(s => s.toString() === oldDishId);
+                if (index !== -1) {
+                    dailyPlan.snacks[index] = newDishId;
+                }
+            }
+        }
+        
+        // Recalculate daily totals
+        const currentDishes = await Dish.find({
+            _id: { 
+                $in: [
+                    dailyPlan.breakfast, 
+                    dailyPlan.lunch, 
+                    dailyPlan.dinner, 
+                    ...(Array.isArray(dailyPlan.snacks) ? dailyPlan.snacks : [])
+                ] 
+            }
+        });
+        
+        let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFats = 0;
+        
+        for (const dish of currentDishes) {
+            totalCal += dish.calories;
+            totalProtein += dish.protein;
+            totalCarbs += dish.carbs;
+            totalFats += dish.fats;
+        }
+        
+        dailyPlan.totalCalories = totalCal;
+        dailyPlan.totalProtein = totalProtein;
+        dailyPlan.totalCarbs = totalCarbs;
+        dailyPlan.totalFats = totalFats;
+        
+        await dietPlan.save();
+        
+        // Fetch updated diet plan with populated dishes
+        const updatedPlan = await DietPlan.findById(user.currentDietPlan)
+            .populate('dailyPlans.breakfast')
+            .populate('dailyPlans.lunch')
+            .populate('dailyPlans.dinner')
+            .populate('dailyPlans.snacks')
+            .lean();
+        
+        return res.json({ ok: true, message: 'Dish updated successfully', dietPlan: updatedPlan });
+    } catch (err) {
+        console.error('Swap dish error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Get all user's diet plans
+app.get('/api/diet/plans', requireAuth, async (req, res) => {
+    try {
+        const plans = await DietPlan.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        return res.json({ ok: true, plans });
+    } catch (err) {
+        console.error('Get diet plans error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Get single dish by ID for recipe details
+app.get('/api/diet/dish/:dishId', requireAuth, async (req, res) => {
+    try {
+        const dishId = req.params.dishId;
+        
+        // Validate MongoDB ObjectId format (24 hex characters)
+        if (!dishId || dishId.length !== 24) {
+            console.log('Invalid dish ID format:', dishId);
+            return res.status(400).json({ ok: false, message: 'Invalid dish ID format' });
+        }
+        
+        const dish = await Dish.findById(dishId).lean();
+        
+        if (!dish) {
+            console.log('Dish not found with ID:', dishId);
+            return res.status(404).json({ ok: false, message: 'Dish not found' });
+        }
+        
+        return res.json({ ok: true, dish });
+    } catch (err) {
+        console.error('Get dish error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Get dishes by category for swapping
+app.get('/api/diet/dishes/:category', requireAuth, async (req, res) => {
+    try {
+        const category = req.params.category;
+        
+        // Check if category is actually a dish ID (longer string)
+        if (category.length >= 20) {
+            // Likely a dish ID, fetch single dish
+            const dish = await Dish.findById(category).lean();
+            if (dish) {
+                return res.json({ ok: true, dish });
+            }
+            return res.status(404).json({ ok: false, message: 'Dish not found' });
+        }
+        
+        // Get user dietary preferences
+        const user = await User.findById(req.user.id);
+        const dietaryPrefs = user.dietaryPreferences || {};
+        
+        // Filter dishes based on dietary preferences
+        let query = { category: category };
+        
+        // Add dietary type filter
+        if (dietaryPrefs.dietaryType === 'vegetarian') {
+            query.dietaryType = { $ne: 'non-vegetarian' };
+        }
+        
+        const dishes = await Dish.find(query).lean();
+        
+        return res.json({ ok: true, dishes });
+    } catch (err) {
+        console.error('Get dishes error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+app.listen(PORT, () => {
+	console.log(`Server running at http://localhost:${PORT}`);
+});
