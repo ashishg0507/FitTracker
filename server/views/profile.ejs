@@ -1,0 +1,489 @@
+<%- include('partials/head', { extraCss: "<link rel='stylesheet' href='/assets/css/profile.css'>" }) %>
+<%- include('partials/nav') %>
+
+<section class="profile-header">
+    <div class="container">
+        <div class="profile-header-content">
+            <div class="profile-avatar">
+                <div class="avatar-container">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" alt="Profile Picture" class="avatar-image" id="avatarImage">
+                    <div class="avatar-overlay">
+                        <i class="fas fa-camera"></i>
+                        <span>Change Photo</span>
+                    </div>
+                </div>
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+            </div>
+            <div class="profile-info">
+                <h1 class="profile-name" id="profileName"><%= (currentUser && currentUser.username) ? currentUser.username : 'Your Name' %></h1>
+                <p class="profile-title" id="profileTitle"><%= (currentUser && currentUser.email) ? currentUser.email : 'Fitness Enthusiast' %></p>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="workoutCount">45</span>
+                        <span class="stat-label">Workouts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="streakCount">12</span>
+                        <span class="stat-label">Day Streak</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="goalProgress">78</span>
+                        <span class="stat-label">Goal %</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button class="btn btn-primary" id="editProfileBtn"><i class="fas fa-edit"></i> Edit Profile</button>
+                <button class="btn btn-secondary" id="shareProfileBtn"><i class="fas fa-share"></i> Share</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="profile-content">
+    <div class="container">
+        <div class="profile-layout">
+            <div class="profile-sidebar">
+                <div class="sidebar-section">
+                    <h3>Quick Stats</h3>
+                    <div class="quick-stats">
+                        <div class="quick-stat">
+                            <i class="fas fa-weight"></i>
+                            <div>
+                                <span class="stat-value" id="currentWeight">75 kg</span>
+                                <span class="stat-label">Current Weight</span>
+                            </div>
+                        </div>
+                        <div class="quick-stat">
+                            <i class="fas fa-bullseye"></i>
+                            <div>
+                                <span class="stat-value" id="targetWeight">70 kg</span>
+                                <span class="stat-label">Target Weight</span>
+                            </div>
+                        </div>
+                        <div class="quick-stat">
+                            <i class="fas fa-ruler"></i>
+                            <div>
+                                <span class="stat-value" id="height">175 cm</span>
+                                <span class="stat-label">Height</span>
+                            </div>
+                        </div>
+                        <div class="quick-stat">
+                            <i class="fas fa-birthday-cake"></i>
+                            <div>
+                                <span class="stat-value" id="age">28</span>
+                                <span class="stat-label">Age</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Fitness Goals</h3>
+                    <div class="goals-list">
+                        <div class="goal-item">
+                            <i class="fas fa-dumbbell"></i>
+                            <span>Build Muscle</span>
+                            <div class="goal-progress">
+                                <div class="progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+                                <span>65%</span>
+                            </div>
+                        </div>
+                        <div class="goal-item">
+                            <i class="fas fa-fire"></i>
+                            <span>Lose Weight</span>
+                            <div class="goal-progress">
+                                <div class="progress-bar"><div class="progress-fill" style="width: 80%"></div></div>
+                                <span>80%</span>
+                            </div>
+                        </div>
+                        <div class="goal-item">
+                            <i class="fas fa-heart"></i>
+                            <span>Improve Endurance</span>
+                            <div class="goal-progress">
+                                <div class="progress-bar"><div class="progress-fill" style="width: 45%"></div></div>
+                                <span>45%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-dumbbell"></i>
+                            <div>
+                                <span class="activity-name">Strength Training</span>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-running"></i>
+                            <div>
+                                <span class="activity-name">Morning Run</span>
+                                <span class="activity-time">Yesterday</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-leaf"></i>
+                            <div>
+                                <span class="activity-name">Yoga Session</span>
+                                <span class="activity-time">2 days ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-main">
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="personal"><i class="fas fa-user"></i> Personal Info</button>
+                    <button class="tab-btn" data-tab="fitness"><i class="fas fa-dumbbell"></i> Fitness Goals</button>
+                    <button class="tab-btn" data-tab="preferences"><i class="fas fa-cog"></i> Preferences</button>
+                    <button class="tab-btn" data-tab="diet"><i class="fas fa-apple-alt"></i> My Diet Plan</button>
+                    <button class="tab-btn" data-tab="achievements"><i class="fas fa-trophy"></i> Achievements</button>
+                </div>
+
+                <div class="tab-content active" id="personal">
+                    <div class="content-section">
+                        <h2>Personal Information</h2>
+                        <form class="profile-form" id="personalForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <input type="text" id="firstName" name="firstName" value="John" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <input type="text" id="lastName" name="lastName" value="Doe" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" name="email" value="john.doe@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone</label>
+                                    <input type="tel" id="phone" name="phone" value="+1 (555) 123-4567">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="dateOfBirth">Date of Birth</label>
+                                    <input type="date" id="dateOfBirth" name="dateOfBirth" value="1995-06-15">
+                                </div>
+                                <div class="form-group">
+                                    <label for="gender">Gender</label>
+                                    <select id="gender" name="gender">
+                                        <option value="male" selected>Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="bio">Bio</label>
+                                <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself...">Passionate fitness enthusiast with 5+ years of experience in strength training and cardio. Love helping others achieve their fitness goals!</textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                <button type="button" class="btn btn-secondary" id="cancelPersonal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="fitness">
+                    <div class="content-section">
+                        <h2>Fitness Goals & Measurements</h2>
+                        <form class="profile-form" id="fitnessForm">
+                            <div class="form-section">
+                                <h3>Physical Measurements</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="height">Height (cm)</label>
+                                        <input type="number" id="height" name="height" value="175" min="100" max="250">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentWeight">Current Weight (kg)</label>
+                                        <input type="number" id="currentWeight" name="currentWeight" value="75" min="30" max="300" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="targetWeight">Target Weight (kg)</label>
+                                        <input type="number" id="targetWeight" name="targetWeight" value="70" min="30" max="300" step="0.1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bodyFat">Body Fat %</label>
+                                        <input type="number" id="bodyFat" name="bodyFat" value="15" min="3" max="50" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Fitness Goals</h3>
+                                <div class="goals-grid">
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal1" name="goals" value="build-muscle" checked>
+                                        <label for="goal1"><i class="fas fa-dumbbell"></i><span>Build Muscle</span></label>
+                                    </div>
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal2" name="goals" value="lose-weight" checked>
+                                        <label for="goal2"><i class="fas fa-fire"></i><span>Lose Weight</span></label>
+                                    </div>
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal3" name="goals" value="improve-endurance">
+                                        <label for="goal3"><i class="fas fa-heart"></i><span>Improve Endurance</span></label>
+                                    </div>
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal4" name="goals" value="increase-flexibility">
+                                        <label for="goal4"><i class="fas fa-leaf"></i><span>Increase Flexibility</span></label>
+                                    </div>
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal5" name="goals" value="improve-strength">
+                                        <label for="goal5"><i class="fas fa-fist-raised"></i><span>Improve Strength</span></label>
+                                    </div>
+                                    <div class="goal-card">
+                                        <input type="checkbox" id="goal6" name="goals" value="general-fitness">
+                                        <label for="goal6"><i class="fas fa-running"></i><span>General Fitness</span></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Activity Level</h3>
+                                <div class="activity-levels">
+                                    <div class="activity-option">
+                                        <input type="radio" id="sedentary" name="activityLevel" value="sedentary">
+                                        <label for="sedentary"><i class="fas fa-couch"></i><span>Sedentary</span><small>Little to no exercise</small></label>
+                                    </div>
+                                    <div class="activity-option">
+                                        <input type="radio" id="light" name="activityLevel" value="light">
+                                        <label for="light"><i class="fas fa-walking"></i><span>Light Activity</span><small>Light exercise 1-3 days/week</small></label>
+                                    </div>
+                                    <div class="activity-option">
+                                        <input type="radio" id="moderate" name="activityLevel" value="moderate" checked>
+                                        <label for="moderate"><i class="fas fa-running"></i><span>Moderate Activity</span><small>Moderate exercise 3-5 days/week</small></label>
+                                    </div>
+                                    <div class="activity-option">
+                                        <input type="radio" id="active" name="activityLevel" value="active">
+                                        <label for="active"><i class="fas fa-dumbbell"></i><span>Very Active</span><small>Heavy exercise 6-7 days/week</small></label>
+                                    </div>
+                                    <div class="activity-option">
+                                        <input type="radio" id="extra" name="activityLevel" value="extra">
+                                        <label for="extra"><i class="fas fa-fire"></i><span>Extra Active</span><small>Very heavy exercise, physical job</small></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Fitness Goals</button>
+                                <button type="button" class="btn btn-secondary" id="cancelFitness">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="preferences">
+                    <div class="content-section">
+                        <h2>Preferences & Settings</h2>
+                        <form class="profile-form" id="preferencesForm">
+                            <div class="form-section">
+                                <h3>Dietary Preferences</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="dietaryType">Diet Type</label>
+                                        <select id="dietaryType" name="dietaryType">
+                                            <option value="vegetarian">Vegetarian</option>
+                                            <option value="non-vegetarian">Non-Vegetarian</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Workout Preferences</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="workoutDuration">Preferred Workout Duration</label>
+                                        <select id="workoutDuration" name="workoutDuration">
+                                            <option value="30">30 minutes</option>
+                                            <option value="45" selected>45 minutes</option>
+                                            <option value="60">60 minutes</option>
+                                            <option value="90">90 minutes</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workoutFrequency">Workout Frequency</label>
+                                        <select id="workoutFrequency" name="workoutFrequency">
+                                            <option value="3">3 times per week</option>
+                                            <option value="4" selected>4 times per week</option>
+                                            <option value="5">5 times per week</option>
+                                            <option value="6">6 times per week</option>
+                                            <option value="7">Daily</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="preferredTime">Preferred Workout Time</label>
+                                    <select id="preferredTime" name="preferredTime">
+                                        <option value="morning" selected>Morning (6 AM - 10 AM)</option>
+                                        <option value="afternoon">Afternoon (10 AM - 2 PM)</option>
+                                        <option value="evening">Evening (2 PM - 6 PM)</option>
+                                        <option value="night">Night (6 PM - 10 PM)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Exercise Preferences</h3>
+                                <div class="exercise-preferences">
+                                    <div class="preference-group">
+                                        <h4>Cardio Activities</h4>
+                                        <div class="checkbox-group">
+                                            <label class="checkbox-label"><input type="checkbox" name="cardio" value="running" checked><span class="checkmark"></span>Running</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="cardio" value="cycling" checked><span class="checkmark"></span>Cycling</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="cardio" value="swimming"><span class="checkmark"></span>Swimming</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="cardio" value="hiit"><span class="checkmark"></span>HIIT</label>
+                                        </div>
+                                    </div>
+                                    <div class="preference-group">
+                                        <h4>Strength Training</h4>
+                                        <div class="checkbox-group">
+                                            <label class="checkbox-label"><input type="checkbox" name="strength" value="bodyweight" checked><span class="checkmark"></span>Bodyweight</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="strength" value="free-weights" checked><span class="checkmark"></span>Free Weights</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="strength" value="machines"><span class="checkmark"></span>Machines</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="strength" value="resistance-bands"><span class="checkmark"></span>Resistance Bands</label>
+                                        </div>
+                                    </div>
+                                    <div class="preference-group">
+                                        <h4>Flexibility & Recovery</h4>
+                                        <div class="checkbox-group">
+                                            <label class="checkbox-label"><input type="checkbox" name="flexibility" value="yoga" checked><span class="checkmark"></span>Yoga</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="flexibility" value="stretching"><span class="checkmark"></span>Stretching</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="flexibility" value="pilates"><span class="checkmark"></span>Pilates</label>
+                                            <label class="checkbox-label"><input type="checkbox" name="flexibility" value="meditation"><span class="checkmark"></span>Meditation</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Notifications</h3>
+                                <div class="notification-settings">
+                                    <div class="notification-item">
+                                        <div class="notification-info">
+                                            <h4>Workout Reminders</h4>
+                                            <p>Get reminded about your scheduled workouts</p>
+                                        </div>
+                                        <label class="toggle-switch"><input type="checkbox" name="workoutReminders" checked><span class="slider"></span></label>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="notification-info">
+                                            <h4>Goal Progress</h4>
+                                            <p>Weekly updates on your fitness goals</p>
+                                        </div>
+                                        <label class="toggle-switch"><input type="checkbox" name="goalProgress" checked><span class="slider"></span></label>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="notification-info">
+                                            <h4>Motivational Messages</h4>
+                                            <p>Daily motivational quotes and tips</p>
+                                        </div>
+                                        <label class="toggle-switch"><input type="checkbox" name="motivational"><span class="slider"></span></label>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="notification-info">
+                                            <h4>Social Updates</h4>
+                                            <p>Updates from your fitness community</p>
+                                        </div>
+                                        <label class="toggle-switch"><input type="checkbox" name="socialUpdates"><span class="slider"></span></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                                <button type="button" class="btn btn-secondary" id="cancelPreferences">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="diet">
+                    <div class="content-section">
+                        <h2>My Diet Plan</h2>
+                        <div id="diet-plan-container">
+                            <div class="diet-plan-loading" id="diet-plan-loading">
+                                <i class="fas fa-spinner fa-spin"></i> Loading your diet plan...
+                            </div>
+                            <div class="diet-plan-empty" id="diet-plan-empty" style="display: none;">
+                                <div class="empty-state">
+                                    <i class="fas fa-utensils"></i>
+                                    <h3>No diet plan yet</h3>
+                                    <p>Create your personalized meal plan from the Diet page</p>
+                                    <a href="/diet" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create Diet Plan
+                                    </a>
+                                </div>
+                            </div>
+                            <div id="diet-plan-content" style="display: none;">
+                                <!-- Diet plan will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="achievements">
+                    <div class="content-section">
+                        <h2>Achievements & Badges</h2>
+                        <div class="achievements-grid">
+                            <div class="achievement-card earned">
+                                <div class="achievement-icon"><i class="fas fa-fire"></i></div>
+                                <h3>First Workout</h3>
+                                <p>Completed your first workout</p>
+                                <span class="achievement-date">Earned 2 days ago</span>
+                            </div>
+                            <div class="achievement-card earned">
+                                <div class="achievement-icon"><i class="fas fa-calendar-check"></i></div>
+                                <h3>7-Day Streak</h3>
+                                <p>Worked out for 7 consecutive days</p>
+                                <span class="achievement-date">Earned 5 days ago</span>
+                            </div>
+                            <div class="achievement-card earned">
+                                <div class="achievement-icon"><i class="fas fa-dumbbell"></i></div>
+                                <h3>Strength Builder</h3>
+                                <p>Completed 10 strength training sessions</p>
+                                <span class="achievement-date">Earned 1 week ago</span>
+                            </div>
+                            <div class="achievement-card">
+                                <div class="achievement-icon"><i class="fas fa-trophy"></i></div>
+                                <h3>Goal Crusher</h3>
+                                <p>Reach your first fitness goal</p>
+                                <span class="achievement-progress">Progress: 78%</span>
+                            </div>
+                            <div class="achievement-card">
+                                <div class="achievement-icon"><i class="fas fa-medal"></i></div>
+                                <h3>Consistency King</h3>
+                                <p>Work out for 30 consecutive days</p>
+                                <span class="achievement-progress">Progress: 12/30 days</span>
+                            </div>
+                            <div class="achievement-card">
+                                <div class="achievement-icon"><i class="fas fa-star"></i></div>
+                                <h3>All-Star</h3>
+                                <p>Complete all workout types</p>
+                                <span class="achievement-progress">Progress: 3/6 types</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="/assets/js/profile.js"></script>
+<%- include('partials/footer') %>

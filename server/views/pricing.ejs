@@ -1,0 +1,239 @@
+<%- include('partials/head', { skipBaseCss: true, extraCss: "<link rel='stylesheet' href='/assets/css/pricing.css'>" }) %>
+<%- include('partials/nav') %>
+
+<div class="container">
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Transform Your Fitness Journey</h1>
+            <p class="hero-subtitle">
+                <i class="fas fa-quote-left" style="color: #ff6b35; margin-right: 10px;"></i>
+                The only bad workout is the one that didn't happen. Start your transformation with Fit Track and make every day count towards your goals.
+                <i class="fas fa-quote-right" style="color: #ff6b35; margin-left: 10px;"></i>
+            </p>
+            <div class="cta-buttons">
+                <button class="btn-primary" onclick="scrollToPricing()">
+                    <i class="fas fa-rocket"></i>
+                    Choose Your Plan
+                </button>
+                <button class="btn-secondary">
+                    <i class="fas fa-play"></i>
+                    Watch Demo
+                </button>
+            </div>
+        </div>
+        <div class="hero-animation">
+            <div class="floating-icon"><i class="fas fa-heartbeat"></i></div>
+            <div class="floating-icon"><i class="fas fa-running"></i></div>
+            <div class="floating-icon"><i class="fas fa-dumbbell"></i></div>
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing-section">
+        <div class="section-header">
+            <h2>Choose Your Perfect Plan</h2>
+            <p>Flexible pricing options to fit your fitness goals and budget</p>
+            <div class="billing-toggle">
+                <span class="toggle-label">Monthly</span>
+                <label class="switch">
+                    <input type="checkbox" id="billingToggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">Yearly <span class="discount-badge">Save 20%</span></span>
+            </div>
+        </div>
+
+        <div class="pricing-cards">
+            <div class="pricing-card">
+                <div class="card-header">
+                    <h3>Basic</h3>
+                    <p>Perfect for beginners</p>
+                </div>
+                <div class="price">
+                    <span class="currency">₹</span>
+                    <span class="amount" data-monthly="299" data-yearly="239">299</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> Basic workout tracking</li>
+                    <li><i class="fas fa-check"></i> 5 exercise categories</li>
+                    <li><i class="fas fa-check"></i> Progress charts</li>
+                    <li><i class="fas fa-check"></i> Community support</li>
+                    <li><i class="fas fa-check"></i> Mobile app access</li>
+                </ul>
+                <button class="btn-card" onclick="selectPlan('basic')">Get Started</button>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="popular-badge">Most Popular</div>
+                <div class="card-header">
+                    <h3>Pro</h3>
+                    <p>For serious fitness enthusiasts</p>
+                </div>
+                <div class="price">
+                    <span class="currency">₹</span>
+                    <span class="amount" data-monthly="599" data-yearly="479">599</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> Everything in Basic</li>
+                    <li><i class="fas fa-check"></i> Unlimited exercises</li>
+                    <li><i class="fas fa-check"></i> Personal trainer AI</li>
+                    <li><i class="fas fa-check"></i> Nutrition tracking</li>
+                    <li><i class="fas fa-check"></i> Advanced analytics</li>
+                    <li><i class="fas fa-check"></i> Custom workout plans</li>
+                    <li><i class="fas fa-check"></i> Priority support</li>
+                </ul>
+                <button class="btn-card featured" onclick="selectPlan('pro')"><i class="fas fa-crown"></i> Go Pro</button>
+            </div>
+
+            <div class="pricing-card">
+                <div class="card-header">
+                    <h3>Premium</h3>
+                    <p>Complete fitness solution</p>
+                </div>
+                <div class="price">
+                    <span class="currency">₹</span>
+                    <span class="amount" data-monthly="999" data-yearly="799">999</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> Everything in Pro</li>
+                    <li><i class="fas fa-check"></i> 1-on-1 coaching calls</li>
+                    <li><i class="fas fa-check"></i> Meal planning AI</li>
+                    <li><i class="fas fa-check"></i> Wearable device sync</li>
+                    <li><i class="fas fa-check"></i> Group challenges</li>
+                    <li><i class="fas fa-check"></i> Advanced reporting</li>
+                    <li><i class="fas fa-check"></i> 24/7 premium support</li>
+                </ul>
+                <button class="btn-card" onclick="selectPlan('premium')"><i class="fas fa-gem"></i> Go Premium</button>
+            </div>
+        </div>
+    </section>
+
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="payment-header">
+                <h2><i class="fas fa-lock"></i> Secure Payment</h2>
+                <p>Your payment information is encrypted and secure</p>
+            </div>
+            <div class="selected-plan">
+                <div class="plan-info">
+                    <h3 id="selectedPlanName">Pro Plan</h3>
+                    <p id="selectedPlanDescription">For serious fitness enthusiasts</p>
+                </div>
+                <div class="plan-pricing">
+                    <div class="price-display">
+                        <span class="currency">₹</span>
+                        <span class="amount" id="selectedPlanPrice">599</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <div class="billing-info" id="billingInfo">
+                        <span class="billing-cycle">Monthly billing</span>
+                        <span class="savings" id="savingsText" style="display: none;">Save 20% with yearly billing</span>
+                    </div>
+                </div>
+            </div>
+            <div class="payment-methods">
+                <h3>Choose Payment Method</h3>
+                <div class="payment-options">
+                    <button class="payment-btn active" onclick="selectPaymentMethod('googlepay')" id="googlepay-btn">
+                        <i class="fab fa-google-pay"></i>
+                        <div class="payment-info">
+                            <span class="payment-name">Google Pay</span>
+                            <span class="payment-desc">Quick & secure</span>
+                        </div>
+                    </button>
+                    <button class="payment-btn" onclick="selectPaymentMethod('card')" id="card-btn">
+                        <i class="fas fa-credit-card"></i>
+                        <div class="payment-info">
+                            <span class="payment-name">Credit/Debit Card</span>
+                            <span class="payment-desc">Visa, Mastercard, RuPay</span>
+                        </div>
+                    </button>
+                    <button class="payment-btn" onclick="selectPaymentMethod('upi')" id="upi-btn">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div class="payment-info">
+                            <span class="payment-name">UPI</span>
+                            <span class="payment-desc">PhonePe, Paytm, GPay</span>
+                        </div>
+                    </button>
+                    <button class="payment-btn" onclick="selectPaymentMethod('netbanking')" id="netbanking-btn">
+                        <i class="fas fa-university"></i>
+                        <div class="payment-info">
+                            <span class="payment-name">Net Banking</span>
+                            <span class="payment-desc">All major banks</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="card-form" id="cardForm" style="display: none;">
+                <h4>Card Details</h4>
+                <form id="paymentForm">
+                    <div class="form-group">
+                        <label>Card Number</label>
+                        <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" id="cardNumber">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Expiry Date</label>
+                            <input type="text" placeholder="MM/YY" maxlength="5" id="expiryDate">
+                        </div>
+                        <div class="form-group">
+                            <label>CVV</label>
+                            <input type="text" placeholder="123" maxlength="3" id="cvv">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cardholder Name</label>
+                        <input type="text" placeholder="John Doe" id="cardholderName">
+                    </div>
+                </form>
+            </div>
+            <div class="upi-form" id="upiForm" style="display: none;">
+                <h4>UPI Payment</h4>
+                <div class="upi-options">
+                    <button class="upi-btn" onclick="initiateUPI('phonepe')">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzAwMDAwMCIvPgo8cGF0aCBkPSJNMjAgMTBDMTQuNDc3IDEwIDEwIDE0LjQ3NyAxMCAyMFMxNC40NzcgMzAgMjAgMzBTMzAgMjUuNTIzIDMwIDIwUzI1LjUyMyAxMCAyMCAxMFoiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+" alt="PhonePe">
+                        PhonePe
+                    </button>
+                    <button class="upi-btn" onclick="initiateUPI('paytm')">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzAwMDAwMCIvPgo8cGF0aCBkPSJNMjAgMTBDMTQuNDc3IDEwIDEwIDE0LjQ3NyAxMCAyMFMxNC40NzcgMzAgMjAgMzBTMzAgMjUuNTIzIDMwIDIwUzI1LjUyMyAxMCAyMCAxMFoiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+" alt="Paytm">
+                        Paytm
+                    </button>
+                    <button class="upi-btn" onclick="initiateUPI('gpay')">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzAwMDAwMCIvPgo8cGF0aCBkPSJNMjAgMTBDMTQuNDc3IDEwIDEwIDE0LjQ3NyAxMCAyMFMxNC40NzcgMzAgMjAgMzBTMzAgMjUuNTIzIDMwIDIwUzI1LjUyMyAxMCAyMCAxMFoiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+" alt="GPay">
+                        Google Pay
+                    </button>
+                </div>
+            </div>
+            <div class="payment-summary">
+                <div class="summary-row">
+                    <span>Plan</span>
+                    <span id="summaryPlan">Pro Plan</span>
+                </div>
+                <div class="summary-row">
+                    <span>Billing Cycle</span>
+                    <span id="summaryBilling">Monthly</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total Amount</span>
+                    <span id="summaryTotal">₹599</span>
+                </div>
+            </div>
+            <button class="btn-pay" onclick="processPayment()" id="payButton">
+                <i class="fas fa-lock"></i>
+                <span>Pay ₹599</span>
+                <div class="loading" id="paymentLoading" style="display: none;"></div>
+            </button>
+            <div class="security-badges">
+                <div class="badge"><i class="fas fa-shield-alt"></i><span>SSL Secured</span></div>
+                <div class="badge"><i class="fas fa-lock"></i><span>256-bit Encryption</span></div>
+                <div class="badge"><i class="fas fa-check-circle"></i><span>PCI Compliant</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/pricing.js"></script>
+<%- include('partials/footer') %>
