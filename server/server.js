@@ -1,18 +1,89 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { createClient } = require('redis');
+const Razorpay = require('razorpay');
 
 // Models
 const User = require('./models/User');
 const Dish = require('./models/Dish');
 const DietPlan = require('./models/DietPlan');
+const Exercise = require('./models/Exercise');
+const WorkoutPlan = require('./models/WorkoutPlan');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ===== REDIS SETUP (for caching) =====
+const REDIS_URL = process.env.REDIS_URL;
+
+let redisClient;
+
+if (REDIS_URL) {
+    redisClient = createClient({ url: REDIS_URL });
+
+    redisClient.on('error', (err) => {
+        console.error('Redis Client Error:', err);
+    });
+
+    redisClient.connect()
+        .then(() => console.log('Redis connected'))
+        .catch((err) => {
+            console.error('Redis connection failed, continuing without cache:', err);
+            redisClient = null;
+        });
+} else {
+    console.warn('REDIS_URL not set. Redis caching is disabled.');
+}
+
+// Simple cache helpers
+async function cacheGet(key) {
+    if (!redisClient) return null;
+    try {
+        const data = await redisClient.get(key);
+        return data ? JSON.parse(data) : null;
+    } catch (err) {
+        console.error('Redis get error:', err);
+        return null;
+    }
+}
+
+async function cacheSet(key, value, ttlSeconds = 300) {
+    if (!redisClient) return;
+    try {
+        await redisClient.set(key, JSON.stringify(value), { EX: ttlSeconds });
+    } catch (err) {
+        console.error('Redis set error:', err);
+    }
+}
+
+async function cacheDel(key) {
+    if (!redisClient) return;
+    try {
+        await redisClient.del(key);
+    } catch (err) {
+        console.error('Redis delete error:', err);
+    }
+}
+
+async function cacheDelPattern(pattern) {
+    if (!redisClient) return;
+    try {
+        const keys = await redisClient.keys(pattern);
+        if (keys.length > 0) {
+            await redisClient.del(keys);
+        }
+    } catch (err) {
+        console.error('Redis delete pattern error:', err);
+    }
+}
 
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -112,12 +183,20 @@ app.get('/profile', requireAuth, (req, res) => {
 // Profile API - get current user
 app.get('/api/profile', requireAuth, async (req, res) => {
     try {
+        const cacheKey = `profile:${req.user.id}`;
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, user: cached, cached: true });
+        }
+
         const user = await User.findById(req.user.id).lean();
         if (!user) {
             return res.status(404).json({ ok: false, message: 'User not found' });
         }
         const { passwordHash, __v, ...safeUser } = user;
-        return res.json({ ok: true, user: safeUser });
+
+        await cacheSet(cacheKey, safeUser, 300); // 5 min TTL
+        return res.json({ ok: true, user: safeUser, cached: false });
     } catch (err) {
         console.error('Get profile error:', err);
         return res.status(500).json({ ok: false, message: 'Internal server error.' });
@@ -130,8 +209,8 @@ app.put('/api/profile', requireAuth, async (req, res) => {
         const allowedFields = [
             'firstName','lastName','phone','dateOfBirth','gender','bio','avatarUrl',
             'height','currentWeight','targetWeight','bodyFat','goals','activityLevel',
-            'workoutDuration','workoutFrequency','preferredTime','cardio','strength',
-            'flexibility','notifications','email','dietaryPreferences'
+            'fitnessLevel','primaryWorkoutGoal','workoutDuration','workoutFrequency',
+            'preferredTime','cardio','strength','flexibility','notifications','email','dietaryPreferences'
         ];
         const update = {};
         for (const key of allowedFields) {
@@ -155,6 +234,20 @@ app.put('/api/profile', requireAuth, async (req, res) => {
         if (!user) {
             return res.status(404).json({ ok: false, message: 'User not found' });
         }
+
+        // Clear related caches when profile is updated
+        if (redisClient) {
+            // Clear training profile cache if fitness-related fields were updated
+            const fitnessFields = ['fitnessLevel', 'primaryWorkoutGoal', 'activityLevel', 'goals', 'workoutFrequency', 'workoutDuration', 'height', 'currentWeight', 'targetWeight'];
+            const hasFitnessUpdate = fitnessFields.some(field => update.hasOwnProperty(field));
+            if (hasFitnessUpdate) {
+                await redisClient.del(`training:profile:${req.user.id}`);
+            }
+
+            // Clear profile cache
+            await redisClient.del(`profile:${req.user.id}`);
+        }
+
         const { passwordHash, __v, ...safeUser } = user;
         return res.json({ ok: true, user: safeUser });
     } catch (err) {
@@ -240,7 +333,7 @@ app.post('/signout', (req, res) => {
     res.redirect('/signin');
 });
 
-app.get('/training', (req, res) => {
+app.get('/training', requireAuth, (req, res) => {
 	res.render('training', { title: 'Start Training - FitTracker' });
 });
 
@@ -526,6 +619,14 @@ app.post('/api/diet/generate', requireAuth, async (req, res) => {
 // Get user's current diet plan
 app.get('/api/diet/current', requireAuth, async (req, res) => {
     try {
+        const cacheKey = `diet:current:${req.user.id}`;
+
+        // Try Redis cache first
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, dietPlan: cached });
+        }
+
         const user = await User.findById(req.user.id);
         if (!user.currentDietPlan) {
             return res.json({ ok: true, dietPlan: null });
@@ -536,6 +637,9 @@ app.get('/api/diet/current', requireAuth, async (req, res) => {
             .populate('dailyPlans.lunch')
             .populate('dailyPlans.dinner')
             .populate('dailyPlans.snacks');
+
+        // Cache the result
+        await cacheSet(cacheKey, dietPlan, 300); // cache for 5 minutes
 
         return res.json({ ok: true, dietPlan });
     } catch (err) {
@@ -640,9 +744,18 @@ app.post('/api/diet/swap-dish', requireAuth, async (req, res) => {
 // Get all user's diet plans
 app.get('/api/diet/plans', requireAuth, async (req, res) => {
     try {
+        const cacheKey = `diet:plans:${req.user.id}`;
+
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, plans: cached });
+        }
+
         const plans = await DietPlan.find({ userId: req.user.id })
             .sort({ createdAt: -1 })
             .lean();
+
+        await cacheSet(cacheKey, plans, 300);
 
         return res.json({ ok: true, plans });
     } catch (err) {
@@ -712,6 +825,229 @@ app.get('/api/diet/dishes/:category', requireAuth, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-	console.log(`Server running at http://localhost:${PORT}`);
+// ===== TRAINING & WORKOUT API ROUTES =====
+
+// Get user profile for training
+app.get('/api/training/profile', requireAuth, async (req, res) => {
+    try {
+        const cacheKey = `training:profile:${req.user.id}`;
+        
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, profileData: cached });
+        }
+
+        const user = await User.findById(req.user.id).lean();
+        if (!user) {
+            return res.status(404).json({ ok: false, message: 'User not found' });
+        }
+
+        const profileData = {
+            age: user.dateOfBirth ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear() : null,
+            gender: user.gender,
+            weight: user.currentWeight,
+            height: user.height,
+            activityLevel: user.activityLevel,
+            fitnessLevel: user.fitnessLevel,
+            primaryWorkoutGoal: user.primaryWorkoutGoal,
+            goals: user.goals || [],
+            workoutDuration: user.workoutDuration,
+            workoutFrequency: user.workoutFrequency,
+            preferredTime: user.preferredTime,
+            cardio: user.cardio || [],
+            strength: user.strength || [],
+            flexibility: user.flexibility || []
+        };
+
+        await cacheSet(cacheKey, profileData, 300);
+        return res.json({ ok: true, profileData });
+    } catch (err) {
+        console.error('Get training profile error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
 });
+
+// Get exercises by category
+app.get('/api/training/exercises/:category', requireAuth, async (req, res) => {
+    try {
+        const category = req.params.category;
+        const cacheKey = `exercises:${category}`;
+
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, exercises: cached });
+        }
+
+        // Build query - make isActive optional (defaults to true in schema)
+        let query = {};
+        
+        // Only filter by category if it's not "all"
+        if (category && category !== 'all') {
+            query.category = category;
+        }
+
+        // Try to find exercises - check both with and without isActive filter
+        let exercises = await Exercise.find(query).lean();
+        
+        // If no results and we filtered by isActive, try without the filter
+        if (exercises.length === 0) {
+            exercises = await Exercise.find(category && category !== 'all' ? { category } : {}).lean();
+        }
+        
+        console.log(`Found ${exercises.length} exercises for category: ${category}`);
+        
+        await cacheSet(cacheKey, exercises, 600); // Cache for 10 minutes
+        
+        return res.json({ ok: true, exercises });
+    } catch (err) {
+        console.error('Get exercises error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.', error: err.message });
+    }
+});
+
+// Get single exercise by ID
+app.get('/api/training/exercise/:exerciseId', requireAuth, async (req, res) => {
+    try {
+        const exerciseId = req.params.exerciseId;
+        
+        if (!exerciseId || exerciseId.length !== 24) {
+            return res.status(400).json({ ok: false, message: 'Invalid exercise ID format' });
+        }
+
+        const cacheKey = `exercise:${exerciseId}`;
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, exercise: cached });
+        }
+        
+        const exercise = await Exercise.findById(exerciseId).lean();
+        
+        if (!exercise) {
+            return res.status(404).json({ ok: false, message: 'Exercise not found' });
+        }
+
+        await cacheSet(cacheKey, exercise, 600);
+        return res.json({ ok: true, exercise });
+    } catch (err) {
+        console.error('Get exercise error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Generate workout plan
+app.post('/api/training/generate', requireAuth, async (req, res) => {
+    try {
+        const { fitnessLevel, primaryGoal, duration, workoutsPerWeek } = req.body;
+        const days = duration || 7;
+        const workoutsPerWeekNum = workoutsPerWeek || 3;
+
+        // Get user profile
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ ok: false, message: 'User not found' });
+        }
+
+        // Determine fitness level from user activity if not provided
+        const level = fitnessLevel || (user.activityLevel === 'sedentary' || user.activityLevel === 'light' ? 'beginner' : 
+                      user.activityLevel === 'moderate' ? 'intermediate' : 'advanced');
+        
+        // Determine goal from user goals if not provided
+        const goal = primaryGoal || (user.goals && user.goals.length > 0 ? user.goals[0] : 'general-fitness');
+
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + days - 1);
+
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        // Get exercises based on goal and level
+        let exerciseQuery = { isActive: true, difficulty: level };
+        
+        // Filter by goal
+        if (goal === 'weight-loss') {
+            exerciseQuery.category = { $in: ['cardio', 'hiit'] };
+        } else if (goal === 'muscle-gain' || goal === 'strength') {
+            exerciseQuery.category = { $in: ['strength'] };
+        } else if (goal === 'flexibility') {
+            exerciseQuery.category = { $in: ['flexibility', 'yoga', 'pilates'] };
+        } else if (goal === 'endurance') {
+            exerciseQuery.category = { $in: ['cardio', 'sports'] };
+        }
+
+        // Get user equipment preferences
+        const userEquipment = user.strength || [];
+        if (userEquipment.length > 0) {
+            // Map user preferences to equipment types
+            const equipmentMap = {
+                'bodyweight': 'bodyweight',
+                'free-weights': 'dumbbells',
+                'machines': 'machine',
+                'resistance-bands': 'resistance-bands'
+            };
+            const preferredEquipment = userEquipment.map(e => equipmentMap[e] || 'bodyweight');
+            exerciseQuery.equipment = { $in: [...preferredEquipment, 'bodyweight', 'none'] };
+        }
+
+        const availableExercises = await Exercise.find(exerciseQuery).limit(50);
+
+        if (availableExercises.length === 0) {
+            return res.status(400).json({ 
+                ok: false, 
+                message: 'No exercises available. Please run: npm run seed-exercises' 
+            });
+        }
+
+        // Generate daily workouts
+        const dailyWorkouts = [];
+        const workoutTypes = ['strength', 'cardio', 'flexibility', 'full-body', 'rest'];
+        
+        for (let i = 0; i < days; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(currentDate.getDate() + i);
+            
+            // Determine workout type based on day and goal
+            let workoutType = 'rest';
+            if (i % Math.ceil(days / workoutsPerWeekNum) === 0 && i < days) {
+                if (goal === 'weight-loss') {
+                    workoutType = i % 2 === 0 ? 'cardio' : 'hiit';
+                } else if (goal === 'muscle-gain' || goal === 'strength') {
+                    workoutType = 'strength';
+                } else if (goal === 'flexibility') {
+                    workoutType = 'flexibility';
+                } else {
+                    workoutType = 'full-body';
+                }
+            }
+
+            if (workoutType === 'rest') {
+                dailyWorkouts.push({
+                    date: formatDate(currentDate),
+                    workoutType: 'rest',
+                    exercises: [],
+                    totalDuration: 0,
+                    estimatedCalories: 0,
+                    completed: false
+                });
+                continue;
+            }
+
+            // Select exercises for this workout
+            const exercisesForDay = [];
+            const numExercises = level === 'beginner' ? 4 : level === 'intermediate' ? 5 : 6;
+            
+            for (let j = 0; j < numExercises && j < availableExercises.length; j++) {
+                const exercise = availableExercises[Math.floor(Math.random() * availableExercises.length)];
+                const sets = level === 'beginner' ? 2 : level === 'intermediate' ? 3 : 4;
+                const reps = level === 'beginner' ? '8-10' : level === 'intermediate' ? '10-12' : '12-15';
+                
+                exercisesForDay.push({
+                    exercise: exercise._id,
+                    sets: sets,
+                    reps: reps,
+                    weight: 0,
+                    duration: exercise.duration || 0,
+                    restTime: 60
+                });
+            }
+
+
