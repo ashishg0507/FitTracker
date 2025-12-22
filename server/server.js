@@ -1050,4 +1050,360 @@ app.post('/api/training/generate', requireAuth, async (req, res) => {
                 });
             }
 
+            const totalDuration = exercisesForDay.reduce((sum, ex) => sum + (ex.duration || 30), 0);
+            const estimatedCalories = exercisesForDay.reduce((sum, ex) => {
+                const exercise = availableExercises.find(e => e._id.toString() === ex.exercise.toString());
+                return sum + ((exercise?.caloriesBurned || 5) * (ex.duration || 30));
+            }, 0);
 
+            dailyWorkouts.push({
+                date: formatDate(currentDate),
+                workoutType: workoutType,
+                exercises: exercisesForDay,
+                totalDuration: totalDuration,
+                estimatedCalories: Math.round(estimatedCalories),
+                completed: false
+            });
+        }
+
+        // Create workout plan
+        const workoutPlan = new WorkoutPlan({
+            userId: req.user.id,
+            name: `My ${days}-Day ${goal.charAt(0).toUpperCase() + goal.slice(1)} Plan`,
+            fitnessLevel: level,
+            primaryGoal: goal,
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
+            duration: days,
+            workoutsPerWeek: workoutsPerWeekNum,
+            dailyWorkouts: dailyWorkouts,
+            preferences: {
+                equipment: user.strength || [],
+                workoutDuration: user.workoutDuration || 45,
+                preferredTime: user.preferredTime || 'morning'
+            }
+        });
+
+        await workoutPlan.save();
+
+        // Update user's current workout plan
+        await User.findByIdAndUpdate(req.user.id, { currentWorkoutPlan: workoutPlan._id });
+
+        // Clear related caches
+        if (redisClient) {
+            await redisClient.del(`workout:current:${req.user.id}`);
+            await redisClient.del(`workout:plans:${req.user.id}`);
+            // Also clear training profile cache since it might affect workout generation
+            await redisClient.del(`training:profile:${req.user.id}`);
+        }
+
+        // Populate workout plan with exercise details
+        const populatedPlan = await WorkoutPlan.findById(workoutPlan._id)
+            .populate('dailyWorkouts.exercises.exercise')
+            .lean();
+
+        return res.json({ ok: true, workoutPlan: populatedPlan });
+    } catch (err) {
+        console.error('Generate workout plan error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Get user's current workout plan
+app.get('/api/training/current', requireAuth, async (req, res) => {
+    try {
+        const cacheKey = `workout:current:${req.user.id}`;
+
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, workoutPlan: cached });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user.currentWorkoutPlan) {
+            return res.json({ ok: true, workoutPlan: null });
+        }
+
+        const workoutPlan = await WorkoutPlan.findById(user.currentWorkoutPlan)
+            .populate('dailyWorkouts.exercises.exercise')
+            .lean();
+
+        await cacheSet(cacheKey, workoutPlan, 300);
+
+        return res.json({ ok: true, workoutPlan });
+    } catch (err) {
+        console.error('Get current workout plan error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Get all user's workout plans
+app.get('/api/training/plans', requireAuth, async (req, res) => {
+    try {
+        const cacheKey = `workout:plans:${req.user.id}`;
+
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+            return res.json({ ok: true, plans: cached });
+        }
+
+        const plans = await WorkoutPlan.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        await cacheSet(cacheKey, plans, 300);
+
+        return res.json({ ok: true, plans });
+    } catch (err) {
+        console.error('Get workout plans error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// Mark workout as completed
+app.post('/api/training/complete', requireAuth, async (req, res) => {
+    try {
+        const { workoutPlanId, dayIndex } = req.body;
+        
+        if (!workoutPlanId || dayIndex === undefined) {
+            return res.status(400).json({ ok: false, message: 'Missing required fields' });
+        }
+
+        const workoutPlan = await WorkoutPlan.findById(workoutPlanId);
+        if (!workoutPlan) {
+            return res.status(404).json({ ok: false, message: 'Workout plan not found' });
+        }
+
+        if (dayIndex < 0 || dayIndex >= workoutPlan.dailyWorkouts.length) {
+            return res.status(400).json({ ok: false, message: 'Invalid day index' });
+        }
+
+        const dailyWorkout = workoutPlan.dailyWorkouts[dayIndex];
+        dailyWorkout.completed = true;
+        dailyWorkout.completedAt = new Date();
+
+        // Update progress
+        workoutPlan.progress.totalWorkoutsCompleted += 1;
+        workoutPlan.progress.totalCaloriesBurned += dailyWorkout.estimatedCalories || 0;
+        workoutPlan.progress.currentStreak += 1;
+        if (workoutPlan.progress.currentStreak > workoutPlan.progress.longestStreak) {
+            workoutPlan.progress.longestStreak = workoutPlan.progress.currentStreak;
+        }
+
+        await workoutPlan.save();
+
+        // Clear related caches
+        if (redisClient) {
+            await redisClient.del(`workout:current:${req.user.id}`);
+            await redisClient.del(`workout:plans:${req.user.id}`);
+            // Also clear training profile cache since progress affects stats
+            await redisClient.del(`training:profile:${req.user.id}`);
+        }
+
+        const updatedPlan = await WorkoutPlan.findById(workoutPlanId)
+            .populate('dailyWorkouts.exercises.exercise')
+            .lean();
+
+        return res.json({ ok: true, message: 'Workout marked as completed', workoutPlan: updatedPlan });
+    } catch (err) {
+        console.error('Complete workout error:', err);
+        return res.status(500).json({ ok: false, message: 'Internal server error.' });
+    }
+});
+
+// ===== RAZORPAY SETUP =====
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_RtkfimNOMnN1eL';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'vxjPyta3N8sfesfxpRGidNAT';
+
+const razorpay = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET
+});
+
+// ===== PAYMENT API ROUTES =====
+
+// Create Razorpay order
+app.post('/api/payment/create-order', requireAuth, async (req, res) => {
+    try {
+        const { planType, billingCycle } = req.body;
+        
+        if (!planType || !billingCycle) {
+            return res.status(400).json({ ok: false, message: 'Plan type and billing cycle are required' });
+        }
+
+        // Plan pricing (in paise - Razorpay uses smallest currency unit)
+        const planPrices = {
+            'basic': { monthly: 29900, yearly: 23900 },
+            'pro': { monthly: 59900, yearly: 47900 },
+            'premium': { monthly: 99900, yearly: 79900 }
+        };
+
+        const amount = planPrices[planType]?.[billingCycle];
+        if (!amount) {
+            return res.status(400).json({ ok: false, message: 'Invalid plan or billing cycle' });
+        }
+
+        // Generate a short receipt ID (max 40 chars for Razorpay)
+        // Format: RCP + timestamp (last 10 digits) + user ID (first 8 chars) = 21 chars
+        const timestamp = Date.now().toString().slice(-10);
+        const userIdShort = req.user.id.toString().slice(-8);
+        const receipt = `RCP${timestamp}${userIdShort}`;
+
+        const options = {
+            amount: amount, // Amount in paise
+            currency: 'INR',
+            receipt: receipt,
+            notes: {
+                userId: req.user.id.toString(),
+                planType: planType,
+                billingCycle: billingCycle,
+                username: req.user.username
+            }
+        };
+
+        const order = await razorpay.orders.create(options);
+
+        // Update user with order ID (temporary, will be finalized on payment success)
+        await User.findByIdAndUpdate(req.user.id, {
+            'subscription.razorpayOrderId': order.id
+        });
+
+        return res.json({
+            ok: true,
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            keyId: RAZORPAY_KEY_ID
+        });
+    } catch (err) {
+        console.error('Create order error:', err);
+        return res.status(500).json({ ok: false, message: 'Failed to create order. Please try again.' });
+    }
+});
+
+// Verify payment and update subscription
+app.post('/api/payment/verify', requireAuth, async (req, res) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ ok: false, message: 'Payment verification data missing' });
+        }
+
+        // Verify signature
+        const crypto = require('crypto');
+        const generated_signature = crypto
+            .createHmac('sha256', RAZORPAY_KEY_SECRET)
+            .update(razorpay_order_id + '|' + razorpay_payment_id)
+            .digest('hex');
+
+        if (generated_signature !== razorpay_signature) {
+            return res.status(400).json({ ok: false, message: 'Invalid payment signature' });
+        }
+
+        // Get order details from Razorpay
+        const order = await razorpay.orders.fetch(razorpay_order_id);
+        
+        // Extract plan info from order notes
+        const planType = order.notes?.planType || 'basic';
+        const billingCycle = order.notes?.billingCycle || 'monthly';
+
+        // Calculate subscription end date
+        const startDate = new Date();
+        const endDate = new Date();
+        if (billingCycle === 'yearly') {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+        } else {
+            endDate.setMonth(endDate.getMonth() + 1);
+        }
+
+        // Update user subscription
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            {
+                'subscription.plan': planType,
+                'subscription.billingCycle': billingCycle,
+                'subscription.status': 'active',
+                'subscription.startDate': startDate,
+                'subscription.endDate': endDate,
+                'subscription.razorpayOrderId': razorpay_order_id,
+                'subscription.razorpayPaymentId': razorpay_payment_id,
+                'subscription.razorpaySignature': razorpay_signature
+            },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ ok: false, message: 'User not found' });
+        }
+
+        // Clear profile cache
+        await cacheDel(`profile:${req.user.id}`);
+
+        return res.json({
+            ok: true,
+            message: 'Payment verified and subscription activated',
+            subscription: user.subscription
+        });
+    } catch (err) {
+        console.error('Payment verification error:', err);
+        return res.status(500).json({ ok: false, message: 'Payment verification failed. Please contact support.' });
+    }
+});
+
+// Get current subscription status
+app.get('/api/payment/subscription', requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).lean();
+        if (!user) {
+            return res.status(404).json({ ok: false, message: 'User not found' });
+        }
+
+        // Check if subscription is expired
+        let subscription = user.subscription || {};
+        if (subscription.endDate && new Date(subscription.endDate) < new Date() && subscription.status === 'active') {
+            subscription.status = 'expired';
+            // Update in database
+            await User.findByIdAndUpdate(req.user.id, { 'subscription.status': 'expired' });
+        }
+
+        return res.json({
+            ok: true,
+            subscription: subscription
+        });
+    } catch (err) {
+        console.error('Get subscription error:', err);
+        return res.status(500).json({ ok: false, message: 'Failed to get subscription status' });
+    }
+});
+
+// ===== SSL/HTTPS SETUP =====
+const certDir = path.join(__dirname, 'ssl');
+const keyPath = path.join(certDir, 'key.pem');
+const certPath = path.join(certDir, 'cert.pem');
+
+const useHTTPS = process.env.USE_HTTPS !== 'false' && fs.existsSync(keyPath) && fs.existsSync(certPath);
+
+if (useHTTPS) {
+    const options = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+    };
+    
+    const httpsServer = https.createServer(options, app);
+    httpsServer.listen(PORT, () => {
+        console.log(`✅ Server running at https://localhost:${PORT}`);
+        console.log('⚠️  Using self-signed certificate. Browser will show security warning.');
+        console.log('   Click "Advanced" → "Proceed to localhost" to continue.');
+    });
+} else {
+    // Fallback to HTTP if certificates not found or HTTPS disabled
+    app.listen(PORT, () => {
+        if (process.env.USE_HTTPS === 'false') {
+            console.log(`Server running at http://localhost:${PORT} (HTTPS disabled)`);
+        } else {
+            console.log(`Server running at http://localhost:${PORT}`);
+            console.log('⚠️  HTTPS not enabled. Run "npm run generate-cert" to generate SSL certificates.');
+        }
+    });
+}
