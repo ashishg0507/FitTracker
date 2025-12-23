@@ -1,290 +1,157 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <%- include('partials/head', { title: 'Start Training - FitTracker' }) %>
-    <link rel="stylesheet" href="/assets/css/training.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <%- include('partials/nav') %>
-    
-    <!-- Hero Section -->
-    <section class="training-hero">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <div class="container">
-                <div class="hero-text">
-                    <h1>Start Your Training Journey</h1>
-                    <p>Choose your fitness level and begin your personalized workout program</p>
-                    <div class="hero-buttons">
-                        <a href="#training-levels" class="btn btn-primary">Get Started</a>
-                        <a href="#workout-plans" class="btn btn-secondary">View Plans</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<%- include('partials/head', { extraCss: '<link rel="stylesheet" href="/assets/css/training.css">' }) %>
+<%- include('partials/nav') %>
 
-    <!-- Training Levels Section -->
-    <section id="training-levels" class="training-levels">
+<main class="main-content">
+    <section class="page-header">
         <div class="container">
-            <div class="section-header">
-                <h2>Choose Your Fitness Level</h2>
-                <p>Select the level that best matches your current fitness experience</p>
-            </div>
-            
-            <div class="levels-grid">
-                <div class="level-card" data-level="beginner">
-                    <div class="level-icon">
-                        <i class="fas fa-seedling"></i>
-                    </div>
-                    <h3>Beginner</h3>
-                    <p>New to fitness or returning after a break</p>
-                    <ul>
-                        <li>Basic exercises</li>
-                        <li>Low intensity</li>
-                        <li>Focus on form</li>
-                        <li>3-4 workouts/week</li>
-                    </ul>
-                    <button class="btn btn-outline">Select Level</button>
-                </div>
-
-                <div class="level-card" data-level="intermediate">
-                    <div class="level-icon">
-                        <i class="fas fa-fire"></i>
-                    </div>
-                    <h3>Intermediate</h3>
-                    <p>Some fitness experience, ready to progress</p>
-                    <ul>
-                        <li>Moderate exercises</li>
-                        <li>Medium intensity</li>
-                        <li>Build strength</li>
-                        <li>4-5 workouts/week</li>
-                    </ul>
-                    <button class="btn btn-outline">Select Level</button>
-                </div>
-
-                <div class="level-card" data-level="advanced">
-                    <div class="level-icon">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h3>Advanced</h3>
-                    <p>Experienced with fitness, seeking challenges</p>
-                    <ul>
-                        <li>Complex exercises</li>
-                        <li>High intensity</li>
-                        <li>Peak performance</li>
-                        <li>5-6 workouts/week</li>
-                    </ul>
-                    <button class="btn btn-outline">Select Level</button>
-                </div>
-            </div>
+            <h1 class="page-title">Training & Workout Plans</h1>
+            <p class="page-subtitle">Build strength, improve endurance, and achieve your fitness goals with personalized workout programs</p>
         </div>
     </section>
 
-    <!-- Workout Plans Section -->
-    <section id="workout-plans" class="workout-plans">
+    <section class="training-content">
         <div class="container">
-            <div class="section-header">
-                <h2>Popular Workout Plans</h2>
-                <p>Choose from our curated collection of effective training programs</p>
-            </div>
-
-            <div class="plans-grid">
-                <div class="plan-card">
-                    <div class="plan-image">
-                        <img src="/assets/images/Lucid_Origin_a_highly_detailed_photograph_of_a_dynamic_basketb_1.jpg" alt="Strength Training">
-                        <div class="plan-overlay">
-                            <span class="plan-duration">8 weeks</span>
-                        </div>
-                    </div>
-                    <div class="plan-content">
-                        <h3>Strength Building</h3>
-                        <p>Build lean muscle and increase your overall strength with progressive resistance training.</p>
-                        <div class="plan-features">
-                            <span class="feature-tag">Weight Training</span>
-                            <span class="feature-tag">Progressive</span>
-                        </div>
-                        <div class="plan-stats">
-                            <div class="stat">
-                                <i class="fas fa-clock"></i>
-                                <span>45-60 min</span>
+            <!-- Workout Plan Generator Section -->
+            <div class="workout-generator-section">
+                <div class="generator-container">
+                    <h2 class="section-title">Create Your Personalized Workout Plan</h2>
+                    <div class="generator-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fitness-level">Fitness Level</label>
+                                <select id="fitness-level" name="fitnessLevel" required>
+                                    <option value="">Select your level</option>
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
                             </div>
-                            <div class="stat">
-                                <i class="fas fa-calendar"></i>
-                                <span>4x/week</span>
+                            <div class="form-group">
+                                <label for="workout-goal">Primary Goal</label>
+                                <select id="workout-goal" name="primaryGoal" required>
+                                    <option value="">Select your goal</option>
+                                    <option value="weight-loss">Weight Loss</option>
+                                    <option value="muscle-gain">Muscle Gain</option>
+                                    <option value="strength">Strength</option>
+                                    <option value="endurance">Endurance</option>
+                                    <option value="flexibility">Flexibility</option>
+                                    <option value="general-fitness">General Fitness</option>
+                                </select>
                             </div>
                         </div>
-                        <button class="btn btn-primary">Start Plan</button>
-                    </div>
-                </div>
-
-                <div class="plan-card">
-                    <div class="plan-image">
-                        <img src="/assets/images/Lucid_Origin_create_an_image_of_a_man_positioned_on_the_right__3.jpg" alt="Cardio Blast">
-                        <div class="plan-overlay">
-                            <span class="plan-duration">6 weeks</span>
-                        </div>
-                    </div>
-                    <div class="plan-content">
-                        <h3>Cardio Blast</h3>
-                        <p>High-energy cardio workouts to burn calories and improve cardiovascular health.</p>
-                        <div class="plan-features">
-                            <span class="feature-tag">HIIT</span>
-                            <span class="feature-tag">Fat Burning</span>
-                        </div>
-                        <div class="plan-stats">
-                            <div class="stat">
-                                <i class="fas fa-clock"></i>
-                                <span>30-45 min</span>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-duration">Plan Duration</label>
+                                <select id="plan-duration" name="duration" required>
+                                    <option value="7">7 Days (1 Week)</option>
+                                    <option value="14" selected>14 Days (2 Weeks)</option>
+                                    <option value="30">30 Days (1 Month)</option>
+                                </select>
                             </div>
-                            <div class="stat">
-                                <i class="fas fa-calendar"></i>
-                                <span>5x/week</span>
+                            <div class="form-group">
+                                <label for="workouts-per-week">Workouts per Week</label>
+                                <select id="workouts-per-week" name="workoutsPerWeek" required>
+                                    <option value="3" selected>3 times</option>
+                                    <option value="4">4 times</option>
+                                    <option value="5">5 times</option>
+                                    <option value="6">6 times</option>
+                                </select>
                             </div>
                         </div>
-                        <button class="btn btn-primary">Start Plan</button>
-                    </div>
-                </div>
-
-                <div class="plan-card">
-                    <div class="plan-image">
-                        <img src="/assets/images/Lucid_Origin_a_highly_detailed_photograph_of_a_dynamic_basketb_1.jpg" alt="Full Body">
-                        <div class="plan-overlay">
-                            <span class="plan-duration">4 weeks</span>
-                        </div>
-                    </div>
-                    <div class="plan-content">
-                        <h3>Full Body Fusion</h3>
-                        <p>Complete body workouts combining strength, cardio, and flexibility training.</p>
-                        <div class="plan-features">
-                            <span class="feature-tag">Full Body</span>
-                            <span class="feature-tag">Balanced</span>
-                        </div>
-                        <div class="plan-stats">
-                            <div class="stat">
-                                <i class="fas fa-clock"></i>
-                                <span>50-70 min</span>
-                            </div>
-                            <div class="stat">
-                                <i class="fas fa-calendar"></i>
-                                <span>3x/week</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary">Start Plan</button>
+                        <button class="btn btn-primary btn-full" id="generate-workout-btn">
+                            <i class="fas fa-dumbbell"></i>
+                            Generate My Workout Plan
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Quick Start Section -->
-    <section class="quick-start">
-        <div class="container">
-            <div class="quick-start-content">
-                <div class="quick-start-text">
-                    <h2>Ready to Start?</h2>
-                    <p>Begin your fitness journey today with our personalized training programs designed for your level and goals.</p>
-                    <div class="quick-start-features">
-                        <div class="feature">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Personalized workouts</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Progress tracking</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Expert guidance</span>
-                        </div>
+            <!-- Current Workout Plan Display Section -->
+            <div class="workout-plan-display" id="workout-plan-display" style="display: none;">
+                <div class="workout-plan-header">
+                    <h2 class="section-title">Your Workout Plan</h2>
+                    <div class="workout-plan-stats" id="workout-plan-stats"></div>
+                </div>
+                <div class="weekly-workouts" id="weekly-workouts">
+                    <!-- Workout plan will be injected here via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Exercise Library Section -->
+            <div class="exercise-library-section">
+                <h2 class="section-title">Exercise Library</h2>
+                <div class="exercise-categories">
+                    <button class="category-btn active" data-category="all">All Exercises</button>
+                    <button class="category-btn" data-category="cardio">Cardio</button>
+                    <button class="category-btn" data-category="strength">Strength</button>
+                    <button class="category-btn" data-category="flexibility">Flexibility</button>
+                    <button class="category-btn" data-category="hiit">HIIT</button>
+                    <button class="category-btn" data-category="yoga">Yoga</button>
+                </div>
+                <div class="exercises-grid" id="exercises-grid">
+                    <div class="exercise-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading exercises...
                     </div>
                 </div>
-                <div class="quick-start-form">
-                    <h3>Quick Assessment</h3>
-                    <form id="quick-assessment">
-                        <div class="form-group">
-                            <label for="fitness-level">Current Fitness Level</label>
-                            <select id="fitness-level" required>
-                                <option value="">Select your level</option>
-                                <option value="beginner">Beginner</option>
-                                <option value="intermediate">Intermediate</option>
-                                <option value="advanced">Advanced</option>
-                            </select>
+            </div>
+
+            <!-- Training Tips Section -->
+            <div class="training-tips-section">
+                <h2 class="section-title">Expert Training Tips</h2>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-dumbbell"></i>
                         </div>
-                        <div class="form-group">
-                            <label for="workout-goal">Primary Goal</label>
-                            <select id="workout-goal" required>
-                                <option value="">Select your goal</option>
-                                <option value="weight-loss">Weight Loss</option>
-                                <option value="muscle-gain">Muscle Gain</option>
-                                <option value="strength">Strength</option>
-                                <option value="endurance">Endurance</option>
-                                <option value="general-fitness">General Fitness</option>
-                            </select>
+                        <h3>Proper Form</h3>
+                        <p>Focus on correct technique over heavy weights. Quality reps lead to better results and prevent injuries.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-clock"></i>
                         </div>
-                        <div class="form-group">
-                            <label for="workout-frequency">Workouts per Week</label>
-                            <select id="workout-frequency" required>
-                                <option value="">Select frequency</option>
-                                <option value="2-3">2-3 times</option>
-                                <option value="4-5">4-5 times</option>
-                                <option value="6+">6+ times</option>
-                            </select>
+                        <h3>Consistency</h3>
+                        <p>Regular workouts are more important than perfect workouts. Aim for consistency over perfection.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-bed"></i>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-full">Get My Plan</button>
-                    </form>
+                        <h3>Rest & Recovery</h3>
+                        <p>Allow your body time to recover. Rest days are when your muscles grow and adapt to training.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Track Progress</h3>
+                        <p>Monitor your workouts, weights, and reps. Progress tracking helps you stay motivated and adjust your plan.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <h3>Stay Hydrated</h3>
+                        <p>Drink water before, during, and after workouts to maintain performance and aid recovery.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <h3>Fuel Your Body</h3>
+                        <p>Eat a balanced meal 1-2 hours before workouts and refuel with protein and carbs after training.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
+</main>
 
-    <!-- Training Tips Section -->
-    <section class="training-tips">
-        <div class="container">
-            <div class="section-header">
-                <h2>Training Tips</h2>
-                <p>Expert advice to maximize your workout results</p>
-            </div>
-            
-            <div class="tips-grid">
-                <div class="tip-card">
-                    <div class="tip-icon">
-                        <i class="fas fa-dumbbell"></i>
-                    </div>
-                    <h3>Proper Form</h3>
-                    <p>Focus on correct technique over heavy weights. Quality reps lead to better results and prevent injuries.</p>
-                </div>
-
-                <div class="tip-card">
-                    <div class="tip-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h3>Consistency</h3>
-                    <p>Regular workouts are more important than perfect workouts. Aim for consistency over perfection.</p>
-                </div>
-
-                <div class="tip-card">
-                    <div class="tip-icon">
-                        <i class="fas fa-bed"></i>
-                    </div>
-                    <h3>Rest & Recovery</h3>
-                    <p>Allow your body time to recover. Rest days are when your muscles grow and adapt to training.</p>
-                </div>
-
-                <div class="tip-card">
-                    <div class="tip-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h3>Track Progress</h3>
-                    <p>Monitor your workouts, weights, and reps. Progress tracking helps you stay motivated and adjust your plan.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <%- include('partials/footer') %>
-    
-    <script src="/assets/js/training.js"></script>
-</body>
-</html>
+<script src="/assets/js/cache-utils.js"></script>
+<script src="/assets/js/training.js"></script>
+<%- include('partials/footer') %>
