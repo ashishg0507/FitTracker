@@ -1,583 +1,467 @@
-// Training Page JavaScript
+// Training Page JavaScript Functionality
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize training page functionality
-    initializeTrainingPage();
+    // Initialize the workout generator
+    initializeWorkoutGenerator();
+    
+    // Load user profile data
+    loadUserProfileData();
+    
+    // Initialize exercise library
+    initializeExerciseLibrary();
+    
+    // Load current workout plan if exists
+    loadCurrentWorkoutPlan();
 });
 
-function initializeTrainingPage() {
-    // Initialize level selection
-    initializeLevelSelection();
+// Workout Generator Functionality
+function initializeWorkoutGenerator() {
+    const generateBtn = document.getElementById('generate-workout-btn');
     
-    // Initialize quick assessment form
-    initializeQuickAssessment();
-    
-    // Initialize smooth scrolling
-    initializeSmoothScrolling();
-    
-    // Initialize animations
-    initializeAnimations();
-}
-
-// Level Selection Functionality
-function initializeLevelSelection() {
-    const levelCards = document.querySelectorAll('.level-card');
-    
-    levelCards.forEach(card => {
-        const button = card.querySelector('.btn-outline');
-        
-        button.addEventListener('click', function() {
-            const level = card.dataset.level;
-            selectLevel(level);
-        });
-        
-        // Add hover effects
-        card.addEventListener('mouseenter', function() {
-            card.style.transform = 'translateY(-10px)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            card.style.transform = 'translateY(0)';
-        });
-    });
-}
-
-function selectLevel(level) {
-    // Remove active class from all cards
-    document.querySelectorAll('.level-card').forEach(card => {
-        card.classList.remove('active');
-    });
-    
-    // Add active class to selected card
-    const selectedCard = document.querySelector(`[data-level="${level}"]`);
-    selectedCard.classList.add('active');
-    
-    // Update button text
-    const button = selectedCard.querySelector('.btn-outline');
-    button.textContent = 'Selected ✓';
-    button.style.background = '#ff6b35';
-    button.style.color = 'white';
-    button.style.borderColor = '#ff6b35';
-    
-    // Scroll to workout plans section
-    document.getElementById('workout-plans').scrollIntoView({
-        behavior: 'smooth'
-    });
-    
-    // Show success message
-    showNotification(`Great! You've selected the ${level} level.`, 'success');
-}
-
-// Quick Assessment Form
-function initializeQuickAssessment() {
-    const form = document.getElementById('quick-assessment');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleQuickAssessment(form);
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
+            if (validateWorkoutForm()) {
+                generateWorkoutPlan();
+            }
         });
     }
 }
 
-function handleQuickAssessment(form) {
-    const formData = new FormData(form);
-    const assessmentData = {
+// Form Validation
+function validateWorkoutForm() {
+    const fitnessLevel = document.getElementById('fitness-level').value;
+    const workoutGoal = document.getElementById('workout-goal').value;
+    const duration = document.getElementById('plan-duration').value;
+    const workoutsPerWeek = document.getElementById('workouts-per-week').value;
+    
+    if (!fitnessLevel || !workoutGoal || !duration || !workoutsPerWeek) {
+        alert('Please fill in all fields');
+        return false;
+    }
+    
+    return true;
+}
+
+// Generate Workout Plan
+async function generateWorkoutPlan() {
+    const formData = {
         fitnessLevel: document.getElementById('fitness-level').value,
-        workoutGoal: document.getElementById('workout-goal').value,
-        workoutFrequency: document.getElementById('workout-frequency').value
+        primaryGoal: document.getElementById('workout-goal').value,
+        duration: parseInt(document.getElementById('plan-duration').value),
+        workoutsPerWeek: parseInt(document.getElementById('workouts-per-week').value)
     };
     
-    // Validate form
-    if (!assessmentData.fitnessLevel || !assessmentData.workoutGoal || !assessmentData.workoutFrequency) {
-        showNotification('Please fill in all fields', 'error');
-        return;
-    }
+    // Show loading state
+    const generateBtn = document.getElementById('generate-workout-btn');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Plan...';
     
-    // Simulate processing
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    submitButton.textContent = 'Creating Your Plan...';
-    submitButton.disabled = true;
-    
-    setTimeout(() => {
-        // Generate personalized plan
-        const plan = generatePersonalizedPlan(assessmentData);
-        displayPersonalizedPlan(plan);
+    try {
+        const response = await fetch('/api/training/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
         
-        // Reset form
-        submitButton.textContent = originalText;
-        submitButton.disabled = false;
-        form.reset();
+        const data = await response.json();
         
-        showNotification('Your personalized plan is ready!', 'success');
-    }, 2000);
-}
-
-function generatePersonalizedPlan(data) {
-    const plans = {
-        'beginner': {
-            'weight-loss': {
-                name: 'Beginner Weight Loss',
-                duration: '8 weeks',
-                frequency: '3-4 times/week',
-                duration_per_workout: '30-45 minutes',
-                focus: 'Cardio and light strength training',
-                description: 'A gentle introduction to fitness focused on burning calories and building basic strength.'
-            },
-            'muscle-gain': {
-                name: 'Beginner Muscle Building',
-                duration: '10 weeks',
-                frequency: '3 times/week',
-                duration_per_workout: '45-60 minutes',
-                focus: 'Full body strength training',
-                description: 'Learn proper form while building lean muscle with progressive resistance training.'
-            },
-            'strength': {
-                name: 'Beginner Strength',
-                duration: '8 weeks',
-                frequency: '3 times/week',
-                duration_per_workout: '45 minutes',
-                focus: 'Compound movements and form',
-                description: 'Master the basics of strength training with proper technique.'
-            },
-            'endurance': {
-                name: 'Beginner Endurance',
-                duration: '6 weeks',
-                frequency: '4 times/week',
-                duration_per_workout: '30-40 minutes',
-                focus: 'Cardio and stamina building',
-                description: 'Build your cardiovascular fitness and endurance gradually.'
-            },
-            'general-fitness': {
-                name: 'Beginner Total Fitness',
-                duration: '8 weeks',
-                frequency: '3-4 times/week',
-                duration_per_workout: '40-50 minutes',
-                focus: 'Balanced fitness program',
-                description: 'A well-rounded program covering strength, cardio, and flexibility.'
-            }
-        },
-        'intermediate': {
-            'weight-loss': {
-                name: 'Intermediate Fat Burn',
-                duration: '6 weeks',
-                frequency: '4-5 times/week',
-                duration_per_workout: '45-60 minutes',
-                focus: 'HIIT and strength training',
-                description: 'High-intensity workouts designed to maximize fat burning.'
-            },
-            'muscle-gain': {
-                name: 'Intermediate Muscle Growth',
-                duration: '12 weeks',
-                frequency: '4-5 times/week',
-                duration_per_workout: '60-75 minutes',
-                focus: 'Progressive overload training',
-                description: 'Advanced muscle building with increased volume and intensity.'
-            },
-            'strength': {
-                name: 'Intermediate Power',
-                duration: '10 weeks',
-                frequency: '4 times/week',
-                duration_per_workout: '60 minutes',
-                focus: 'Strength and power development',
-                description: 'Build serious strength with advanced training techniques.'
-            },
-            'endurance': {
-                name: 'Intermediate Endurance',
-                duration: '8 weeks',
-                frequency: '5 times/week',
-                duration_per_workout: '45-60 minutes',
-                focus: 'Advanced cardio training',
-                description: 'Push your endurance limits with challenging workouts.'
-            },
-            'general-fitness': {
-                name: 'Intermediate Total Fitness',
-                duration: '10 weeks',
-                frequency: '4-5 times/week',
-                duration_per_workout: '50-65 minutes',
-                focus: 'Comprehensive fitness development',
-                description: 'Advanced program covering all aspects of fitness.'
-            }
-        },
-        'advanced': {
-            'weight-loss': {
-                name: 'Advanced Fat Shred',
-                duration: '4 weeks',
-                frequency: '5-6 times/week',
-                duration_per_workout: '60-75 minutes',
-                focus: 'Extreme HIIT and metabolic training',
-                description: 'Intense program for rapid fat loss and conditioning.'
-            },
-            'muscle-gain': {
-                name: 'Advanced Mass Builder',
-                duration: '16 weeks',
-                frequency: '5-6 times/week',
-                duration_per_workout: '75-90 minutes',
-                focus: 'Advanced hypertrophy training',
-                description: 'Elite-level muscle building program for serious athletes.'
-            },
-            'strength': {
-                name: 'Advanced Power',
-                duration: '12 weeks',
-                frequency: '5 times/week',
-                duration_per_workout: '75 minutes',
-                focus: 'Maximum strength development',
-                description: 'Elite strength training for powerlifters and athletes.'
-            },
-            'endurance': {
-                name: 'Advanced Endurance',
-                duration: '10 weeks',
-                frequency: '6 times/week',
-                duration_per_workout: '60-90 minutes',
-                focus: 'Elite endurance training',
-                description: 'Professional-level endurance and stamina development.'
-            },
-            'general-fitness': {
-                name: 'Advanced Total Fitness',
-                duration: '12 weeks',
-                frequency: '5-6 times/week',
-                duration_per_workout: '65-80 minutes',
-                focus: 'Elite comprehensive training',
-                description: 'Professional-level fitness program for serious athletes.'
-            }
+        if (data.ok && data.workoutPlan) {
+            // Invalidate cache after generating new plan
+            invalidateCache('workoutPlan');
+            displayWorkoutPlan(data.workoutPlan);
+            document.getElementById('workout-plan-display').style.display = 'block';
+            document.getElementById('workout-plan-display').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            alert(data.message || 'Failed to generate workout plan');
         }
-    };
-    
-    return plans[data.fitnessLevel][data.workoutGoal];
+    } catch (err) {
+        console.error('Error generating workout plan:', err);
+        alert('An error occurred while generating your workout plan');
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = originalText;
+    }
 }
 
-function displayPersonalizedPlan(plan) {
-    // Create modal or update existing content
-    const modal = createPlanModal(plan);
-    document.body.appendChild(modal);
+// Display Workout Plan
+function displayWorkoutPlan(workoutPlan) {
+    const displaySection = document.getElementById('workout-plan-display');
+    const weeklyWorkouts = document.getElementById('weekly-workouts');
+    const statsDiv = document.getElementById('workout-plan-stats');
     
-    // Show modal
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function createPlanModal(plan) {
-    const modal = document.createElement('div');
-    modal.className = 'plan-modal';
-    modal.innerHTML = `
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Your Personalized Plan</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="plan-details">
-                    <h3>${plan.name}</h3>
-                    <p class="plan-description">${plan.description}</p>
-                    
-                    <div class="plan-specs">
-                        <div class="spec">
-                            <i class="fas fa-calendar"></i>
-                            <span><strong>Duration:</strong> ${plan.duration}</span>
-                        </div>
-                        <div class="spec">
-                            <i class="fas fa-clock"></i>
-                            <span><strong>Frequency:</strong> ${plan.frequency}</span>
-                        </div>
-                        <div class="spec">
-                            <i class="fas fa-stopwatch"></i>
-                            <span><strong>Workout Length:</strong> ${plan.duration_per_workout}</span>
-                        </div>
-                        <div class="spec">
-                            <i class="fas fa-target"></i>
-                            <span><strong>Focus:</strong> ${plan.focus}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn btn-primary" onclick="startPlan('${plan.name}')">Start This Plan</button>
-                        <button class="btn btn-secondary close-modal">Close</button>
-                    </div>
-                </div>
-            </div>
+    // Display stats
+    const totalWorkouts = workoutPlan.dailyWorkouts.filter(w => w.workoutType !== 'rest').length;
+    const totalCalories = workoutPlan.dailyWorkouts.reduce((sum, w) => sum + (w.estimatedCalories || 0), 0);
+    const avgDuration = Math.round(workoutPlan.dailyWorkouts.reduce((sum, w) => sum + (w.totalDuration || 0), 0) / workoutPlan.dailyWorkouts.length);
+    
+    statsDiv.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+            <div class="stat-value">${totalWorkouts}</div>
+            <div class="stat-label">Workouts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-fire"></i></div>
+            <div class="stat-value">${totalCalories}</div>
+            <div class="stat-label">Total Calories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-value">${avgDuration} min</div>
+            <div class="stat-label">Avg Duration</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+            <div class="stat-value">${workoutPlan.progress?.currentStreak || 0}</div>
+            <div class="stat-label">Day Streak</div>
         </div>
     `;
     
-    // Add modal styles
-    const style = document.createElement('style');
-    style.textContent = `
-        .plan-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            animation: modalSlideIn 0.3s ease-out;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2rem 2rem 1rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .modal-header h2 {
-            color: #333;
-            margin: 0;
-        }
-        
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 2rem;
-            color: #666;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal-body {
-            padding: 2rem;
-        }
-        
-        .plan-details h3 {
-            color: #ff6b35;
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-        }
-        
-        .plan-description {
-            color: #666;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-        
-        .plan-specs {
-            display: grid;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .spec {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        
-        .spec i {
-            color: #ff6b35;
-            width: 20px;
-        }
-        
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-        
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    `;
+    // Create tabs container
+    const tabsContainer = document.createElement('div');
+    tabsContainer.className = 'tabs-list';
     
-    document.head.appendChild(style);
+    // Create content container
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'tabs-content';
     
-    // Add event listeners
-    modal.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.remove();
-            document.body.style.overflow = '';
-        });
-    });
-    
-    modal.querySelector('.modal-overlay').addEventListener('click', () => {
-        modal.remove();
-        document.body.style.overflow = '';
-    });
-    
-    return modal;
-}
-
-// Smooth Scrolling
-function initializeSmoothScrolling() {
-    const links = document.querySelectorAll('a[href^="#"]');
-    
-    links.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
+    // Generate tabs and content for each day
+    workoutPlan.dailyWorkouts.forEach((dailyWorkout, index) => {
+        const date = new Date(dailyWorkout.date);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayNum = date.getDate();
+        
+        // Create tab button
+        const tabButton = document.createElement('div');
+        tabButton.className = `tab-button ${index === 0 ? 'active' : ''} ${dailyWorkout.completed ? 'completed' : ''}`;
+        tabButton.dataset.day = index;
+        tabButton.innerHTML = `
+            <div class="tab-day">${dayName}</div>
+            <div class="tab-date">${dayNum}</div>
+            ${dailyWorkout.completed ? '<i class="fas fa-check-circle" style="margin-top: 0.25rem; color: #27ae60;"></i>' : ''}
+        `;
+        tabsContainer.appendChild(tabButton);
+        
+        // Create tab panel
+        const tabPanel = document.createElement('div');
+        tabPanel.className = `tab-panel ${index === 0 ? 'active' : ''}`;
+        tabPanel.dataset.day = index;
+        
+        if (dailyWorkout.workoutType === 'rest') {
+            tabPanel.innerHTML = `
+                <div class="tab-panel-header">
+                    <h3>${date.toLocaleDateString('en-US', { weekday: 'long' })} - Rest Day</h3>
+                    <p>${dateStr}</p>
+                </div>
+                <div class="rest-day-content">
+                    <i class="fas fa-bed"></i>
+                    <h3>Rest Day</h3>
+                    <p>Take a well-deserved rest. Recovery is essential for progress!</p>
+                </div>
+            `;
+        } else {
+            const exercisesList = dailyWorkout.exercises.map(ex => {
+                const exercise = ex.exercise;
+                if (!exercise) return '';
+                
+                return `
+                    <div class="exercise-item">
+                        <div class="exercise-info">
+                            <h4>${exercise.name}</h4>
+                            <p class="exercise-meta">${exercise.muscleGroups?.join(', ') || 'Full Body'}</p>
+                        </div>
+                        <div class="exercise-details">
+                            ${ex.sets ? `<span class="detail-badge"><i class="fas fa-redo"></i> ${ex.sets} sets</span>` : ''}
+                            ${ex.reps ? `<span class="detail-badge"><i class="fas fa-hashtag"></i> ${ex.reps} reps</span>` : ''}
+                            ${ex.duration ? `<span class="detail-badge"><i class="fas fa-clock"></i> ${ex.duration} min</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
             
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
+            tabPanel.innerHTML = `
+                <div class="tab-panel-header">
+                    <h3>${date.toLocaleDateString('en-US', { weekday: 'long' })}</h3>
+                    <p>${dateStr}</p>
+                </div>
+                <div class="workout-day-summary">
+                    <div class="summary-badge ${dailyWorkout.workoutType}">
+                        <span class="workout-type-badge ${dailyWorkout.workoutType}">${dailyWorkout.workoutType.charAt(0).toUpperCase() + dailyWorkout.workoutType.slice(1)}</span>
+                    </div>
+                    <div class="workout-stats">
+                        <span><i class="fas fa-clock"></i> ${dailyWorkout.totalDuration} min</span>
+                        <span><i class="fas fa-fire"></i> ${dailyWorkout.estimatedCalories} cal</span>
+                        <span><i class="fas fa-dumbbell"></i> ${dailyWorkout.exercises.length} exercises</span>
+                    </div>
+                </div>
+                <div class="exercises-list">
+                    ${exercisesList}
+                </div>
+                <div class="workout-actions">
+                    ${!dailyWorkout.completed ? `
+                        <button class="btn btn-primary btn-full" onclick="completeWorkout('${workoutPlan._id}', ${index})">
+                            <i class="fas fa-check"></i> Mark as Completed
+                        </button>
+                    ` : `
+                        <div class="completed-badge"><i class="fas fa-check-circle"></i> Completed</div>
+                    `}
+                </div>
+            `;
+        }
+        
+        contentContainer.appendChild(tabPanel);
+    });
+    
+    // Clear and add tabs and content
+    weeklyWorkouts.innerHTML = '';
+    weeklyWorkouts.appendChild(tabsContainer);
+    weeklyWorkouts.appendChild(contentContainer);
+    
+    // Add tab switching functionality
+    const tabButtons = tabsContainer.querySelectorAll('.tab-button');
+    const tabPanels = contentContainer.querySelectorAll('.tab-panel');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const dayIndex = parseInt(button.dataset.day);
+            
+            // Remove active class from all
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanels.forEach(panel => panel.classList.remove('active'));
+            
+            // Add active class to selected
+            button.classList.add('active');
+            tabPanels[dayIndex].classList.add('active');
         });
     });
 }
 
-// Animations
-function initializeAnimations() {
-    // Intersection Observer for fade-in animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate-in');
-            }
+// Complete Workout
+async function completeWorkout(workoutPlanId, dayIndex) {
+    try {
+        const response = await fetch('/api/training/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workoutPlanId, dayIndex })
         });
-    }, observerOptions);
-    
-    // Observe elements for animation
-    const animateElements = document.querySelectorAll('.level-card, .plan-card, .tip-card');
-    animateElements.forEach(el => {
-        observer.observe(el);
+        
+        const data = await response.json();
+        
+        if (data.ok && data.workoutPlan) {
+            // Invalidate cache after completing workout
+            invalidateCache('workoutPlan');
+            displayWorkoutPlan(data.workoutPlan);
+            alert('Workout marked as completed! Great job! 🎉');
+        } else {
+            alert(data.message || 'Failed to mark workout as completed');
+        }
+    } catch (err) {
+        console.error('Error completing workout:', err);
+        alert('An error occurred while marking workout as completed');
+    }
+}
+
+// Load Current Workout Plan
+async function loadCurrentWorkoutPlan() {
+    try {
+        const response = await cachedFetch('/api/training/current', {}, 'workoutPlan', CACHE_TTL.workoutPlan);
+        const data = await response.json();
+        
+        if (data.ok && data.workoutPlan) {
+            displayWorkoutPlan(data.workoutPlan);
+            document.getElementById('workout-plan-display').style.display = 'block';
+        }
+    } catch (err) {
+        console.error('Error loading current workout plan:', err);
+    }
+}
+
+// Load User Profile Data
+async function loadUserProfileData() {
+    try {
+        // Try to get profile data from the main profile API first
+        const profileResponse = await cachedFetch('/api/profile', {}, 'profile', CACHE_TTL.profile);
+        const profileData = await profileResponse.json();
+        
+        if (profileData.ok && profileData.user) {
+            const user = profileData.user;
+            
+            // Pre-fill fitness level - use explicit fitnessLevel if set, otherwise derive from activityLevel
+            if (user.fitnessLevel) {
+                document.getElementById('fitness-level').value = user.fitnessLevel;
+            } else if (user.activityLevel) {
+                // Map activity level to fitness level as fallback
+                const levelMap = {
+                    'sedentary': 'beginner',
+                    'light': 'beginner',
+                    'moderate': 'intermediate',
+                    'active': 'advanced',
+                    'very-active': 'advanced'
+                };
+                const fitnessLevel = levelMap[user.activityLevel] || 'beginner';
+                document.getElementById('fitness-level').value = fitnessLevel;
+            }
+            
+            // Pre-fill primary workout goal - use explicit primaryWorkoutGoal if set, otherwise derive from goals
+            if (user.primaryWorkoutGoal) {
+                document.getElementById('workout-goal').value = user.primaryWorkoutGoal;
+            } else if (user.goals && user.goals.length > 0) {
+                // Map user goals to workout goals
+                const goalMap = {
+                    'build-muscle': 'muscle-gain',
+                    'lose-weight': 'weight-loss',
+                    'improve-strength': 'strength',
+                    'improve-endurance': 'endurance',
+                    'increase-flexibility': 'flexibility',
+                    'general-fitness': 'general-fitness'
+                };
+                // Try to find matching goal
+                let workoutGoal = 'general-fitness';
+                for (const goal of user.goals) {
+                    if (goalMap[goal]) {
+                        workoutGoal = goalMap[goal];
+                        break;
+                    }
+                }
+                document.getElementById('workout-goal').value = workoutGoal;
+            }
+            
+            // Pre-fill workouts per week
+            if (user.workoutFrequency && user.workoutFrequency > 0) {
+                document.getElementById('workouts-per-week').value = user.workoutFrequency;
+            }
+        }
+        
+        // Also try the training profile API as fallback
+        const trainingResponse = await cachedFetch('/api/training/profile', {}, 'trainingProfile', CACHE_TTL.trainingProfile);
+        const trainingData = await trainingResponse.json();
+        
+        if (trainingData.ok && trainingData.profileData) {
+            const profile = trainingData.profileData;
+            
+            // Only fill if not already filled from main profile
+            if (!document.getElementById('fitness-level').value && profile.activityLevel) {
+                const levelMap = {
+                    'sedentary': 'beginner',
+                    'light': 'beginner',
+                    'moderate': 'intermediate',
+                    'active': 'advanced',
+                    'very-active': 'advanced'
+                };
+                const fitnessLevel = levelMap[profile.activityLevel] || 'beginner';
+                document.getElementById('fitness-level').value = fitnessLevel;
+            }
+            
+            if (!document.getElementById('workout-goal').value && profile.goals && profile.goals.length > 0) {
+                const goalMap = {
+                    'build-muscle': 'muscle-gain',
+                    'lose-weight': 'weight-loss',
+                    'improve-strength': 'strength',
+                    'improve-endurance': 'endurance',
+                    'increase-flexibility': 'flexibility'
+                };
+                const workoutGoal = goalMap[profile.goals[0]] || 'general-fitness';
+                document.getElementById('workout-goal').value = workoutGoal;
+            }
+            
+            if (!document.getElementById('workouts-per-week').value && profile.workoutFrequency) {
+                document.getElementById('workouts-per-week').value = profile.workoutFrequency;
+            }
+        }
+    } catch (err) {
+        console.error('Error loading user profile:', err);
+    }
+}
+
+// Initialize Exercise Library
+function initializeExerciseLibrary() {
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    categoryBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            categoryBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            loadExercises(this.dataset.category);
+        });
     });
+    
+    // Load all exercises by default
+    loadExercises('all');
 }
 
-// Notification System
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
+// Load Exercises
+async function loadExercises(category) {
+    const exercisesGrid = document.getElementById('exercises-grid');
+    exercisesGrid.innerHTML = '<div class="exercise-loading"><i class="fas fa-spinner fa-spin"></i> Loading exercises...</div>';
     
-    // Add notification styles
-    const style = document.createElement('style');
-    style.textContent = `
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 2rem;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            z-index: 10001;
-            animation: slideInRight 0.3s ease-out;
+    try {
+        // Use 'all' to get all exercises, or specific category
+        const categoryParam = category === 'all' ? 'all' : category;
+        const response = await cachedFetch(`/api/training/exercises/${categoryParam}`, {}, `exercises_${categoryParam}`, CACHE_TTL.exercises);
+        const data = await response.json();
+        
+        console.log('Exercise API response:', data);
+        
+        if (!data.ok) {
+            throw new Error(data.message || 'Failed to load exercises');
         }
         
-        .notification-success {
-            background: #28a745;
+        const exercises = data.exercises || [];
+        console.log(`Loaded ${exercises.length} exercises for category: ${categoryParam}`);
+        
+        if (exercises.length === 0) {
+            exercisesGrid.innerHTML = '<div class="exercise-empty"><p>No exercises found in database. Please run: <code>npm run seed-exercises</code></p></div>';
+            return;
         }
         
-        .notification-error {
-            background: #dc3545;
-        }
-        
-        .notification-info {
-            background: #17a2b8;
-        }
-        
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-    `;
-    
-    if (!document.querySelector('style[data-notification]')) {
-        style.setAttribute('data-notification', 'true');
-        document.head.appendChild(style);
+        exercisesGrid.innerHTML = exercises.map(exercise => `
+            <div class="exercise-card">
+                <div class="exercise-card-header">
+                    <h3>${exercise.name}</h3>
+                    <span class="exercise-category-badge ${exercise.category}">${exercise.category}</span>
+                </div>
+                <div class="exercise-card-body">
+                    <p class="exercise-description">${exercise.description || 'No description available'}</p>
+                    <div class="exercise-meta">
+                        ${exercise.muscleGroups && exercise.muscleGroups.length > 0 ? `
+                            <div class="meta-item">
+                                <i class="fas fa-dumbbell"></i>
+                                <span>${exercise.muscleGroups.join(', ')}</span>
+                            </div>
+                        ` : ''}
+                        <div class="meta-item">
+                            <i class="fas fa-signal"></i>
+                            <span>${exercise.difficulty || 'Beginner'}</span>
+                        </div>
+                        ${exercise.equipment ? `
+                            <div class="meta-item">
+                                <i class="fas fa-tools"></i>
+                                <span>${exercise.equipment}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${exercise.instructions && exercise.instructions.length > 0 ? `
+                        <div class="exercise-instructions">
+                            <h4>Instructions:</h4>
+                            <ol>
+                                ${exercise.instructions.map(inst => `<li>${inst}</li>`).join('')}
+                            </ol>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading exercises:', err);
+        exercisesGrid.innerHTML = `
+            <div class="exercise-error">
+                <p><strong>Error loading exercises:</strong> ${err.message || 'Unknown error'}</p>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Make sure you've run: <code>npm run seed-exercises</code>
+                </p>
+            </div>
+        `;
     }
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease-out';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 3000);
 }
 
-// Plan Actions
-function startPlan(planName) {
-    showNotification(`Starting ${planName}! Redirecting to workout dashboard...`, 'success');
-    
-    // Simulate redirect after a delay
-    setTimeout(() => {
-        // In a real application, this would redirect to the workout dashboard
-        console.log(`Starting plan: ${planName}`);
-        // window.location.href = '/dashboard';
-    }, 2000);
-}
-
-// Utility Functions
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Add CSS for animations
-const animationCSS = `
-    .level-card,
-    .plan-card,
-    .tip-card {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: all 0.6s ease-out;
-    }
-    
-    .level-card.animate-in,
-    .plan-card.animate-in,
-    .tip-card.animate-in {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    .level-card.active {
-        border: 2px solid #ff6b35;
-        transform: translateY(-10px);
-    }
-`;
-
-// Inject animation CSS
-const styleSheet = document.createElement('style');
-styleSheet.textContent = animationCSS;
-document.head.appendChild(styleSheet);
