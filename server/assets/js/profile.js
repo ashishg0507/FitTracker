@@ -37,9 +37,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUserData();
 });
 
-// API helpers
+// API helpers with client-side caching (works alongside Redis backend caching)
 async function apiGetProfile() {
-    const res = await fetch('/api/profile', { headers: { 'Accept': 'application/json' } });
+    // Use cached fetch - checks localStorage first, then API (which uses Redis)
+    const res = await cachedFetch('/api/profile', { 
+        headers: { 'Accept': 'application/json' } 
+    }, 'profile', CACHE_TTL.profile);
+    
     if (!res.ok) {
         const message = await safeReadJsonMessage(res);
         const err = new Error(message || 'Failed to load profile');
@@ -51,6 +55,7 @@ async function apiGetProfile() {
 }
 
 async function apiUpdateProfile(payload) {
+    // Direct fetch for updates (no caching)
     const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -63,6 +68,10 @@ async function apiUpdateProfile(payload) {
         throw err;
     }
     const data = await res.json();
+    
+    // Invalidate cache after update (backend Redis cache is invalidated by server)
+    invalidateCache('profile');
+    
     return data.user;
 }
 
@@ -222,12 +231,14 @@ function handleFitnessFormSubmit(e) {
     
     const formData = new FormData(e.target);
     const fitnessData = {
-        height: parseInt(formData.get('height')),
-        currentWeight: parseFloat(formData.get('currentWeight')),
-        targetWeight: parseFloat(formData.get('targetWeight')),
-        bodyFat: parseFloat(formData.get('bodyFat')),
+        height: parseInt(formData.get('height')) || 0,
+        currentWeight: parseFloat(formData.get('currentWeight')) || 0,
+        targetWeight: parseFloat(formData.get('targetWeight')) || 0,
+        bodyFat: parseFloat(formData.get('bodyFat')) || 0,
         goals: formData.getAll('goals'),
-        activityLevel: formData.get('activityLevel')
+        activityLevel: formData.get('activityLevel') || '',
+        fitnessLevel: formData.get('fitnessLevel') || '',
+        primaryWorkoutGoal: formData.get('primaryWorkoutGoal') || ''
     };
     
     apiUpdateProfile(fitnessData)
@@ -328,10 +339,22 @@ function loadPersonalData() {
 // Load Fitness Data
 function loadFitnessData() {
     const form = document.getElementById('fitnessForm');
-    form.height.value = currentUser.height;
-    form.currentWeight.value = currentUser.currentWeight;
-    form.targetWeight.value = currentUser.targetWeight;
-    form.bodyFat.value = currentUser.bodyFat;
+    if (!form) return;
+    
+    form.height.value = currentUser.height || '';
+    form.currentWeight.value = currentUser.currentWeight || '';
+    form.targetWeight.value = currentUser.targetWeight || '';
+    form.bodyFat.value = currentUser.bodyFat || '';
+    
+    // Set fitness level
+    if (form.fitnessLevel) {
+        form.fitnessLevel.value = currentUser.fitnessLevel || '';
+    }
+    
+    // Set primary workout goal
+    if (form.primaryWorkoutGoal) {
+        form.primaryWorkoutGoal.value = currentUser.primaryWorkoutGoal || '';
+    }
     
     // Clear all goal checkboxes
     form.querySelectorAll('input[name="goals"]').forEach(checkbox => {
@@ -339,14 +362,18 @@ function loadFitnessData() {
     });
     
     // Check selected goals
-    currentUser.goals.forEach(goal => {
-        const checkbox = form.querySelector(`input[value="${goal}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
+    if (currentUser.goals && Array.isArray(currentUser.goals)) {
+        currentUser.goals.forEach(goal => {
+            const checkbox = form.querySelector(`input[value="${goal}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
     
     // Set activity level
-    const activityRadio = form.querySelector(`input[value="${currentUser.activityLevel}"]`);
-    if (activityRadio) activityRadio.checked = true;
+    if (currentUser.activityLevel) {
+        const activityRadio = form.querySelector(`input[name="activityLevel"][value="${currentUser.activityLevel}"]`);
+        if (activityRadio) activityRadio.checked = true;
+    }
 }
 
 // Load Preferences Data
