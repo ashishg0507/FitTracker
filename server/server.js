@@ -22,6 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== REDIS SETUP (for caching) =====
+// ===== REDIS SETUP (for caching) =====
 const REDIS_URL = process.env.REDIS_URL;
 
 let redisClient;
@@ -248,17 +249,6 @@ app.put('/api/profile', requireAuth, async (req, res) => {
             await redisClient.del(`profile:${req.user.id}`);
         }
 
-        const { passwordHash, __v, ...safeUser } = user;
-        return res.json({ ok: true, user: safeUser });
-    } catch (err) {
-        console.error('Update profile error:', err);
-        // Handle unique email conflict
-        if (err && err.code === 11000) {
-            return res.status(409).json({ ok: false, message: 'Email already in use.' });
-        }
-        return res.status(500).json({ ok: false, message: 'Internal server error.' });
-    }
-});
 
 app.get('/about', (req, res) => {
 	res.render('marketing/about', { title: 'About Us - FitTack' });
